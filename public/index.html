@@ -33,13 +33,13 @@
         <a href="#" class="nav-link active" data-tab="home">Beranda</a>
         <a href="#" class="nav-link" data-tab="download">Download</a>
         <a href="#" class="nav-link" data-tab="upload">Upload Gambar</a>
-        <a href="#" class="nav-link" data-tab="ai">AI Chat</a>
+        <a href="#" class="nav-link" data-tab="ai">AI Chat (Coming Soon)</a>
       </nav>
     </header>
 
     <!-- MAIN -->
     <main class="main-content">
-      <!-- TAB HOME -->
+      <!-- HOME -->
       <section class="tab-pane active" id="tab-home">
         <div class="hero">
           <div class="hero-thumbnail">
@@ -51,9 +51,8 @@
           <div class="hero-text">
             <h2>Selamat Datang di Zeanova Library</h2>
             <p>
-              Tempat terbaik untuk mengunduh dan mengunggah media dari berbagai
-              platform populer. Nikmati kemudahan dalam mengakses konten favorit
-              Anda!
+              Download video dan musik dari YouTube, TikTok, Spotify, Instagram.
+              Upload gambar ke link dengan mudah.
             </p>
           </div>
           <div class="feature-grid">
@@ -80,17 +79,17 @@
             <div class="feature-item">
               <i class="fas fa-upload"></i>
               <h3>Upload Gambar</h3>
-              <p>Ke Link Zeanova</p>
+              <p>Ke Link (Catbox)</p>
             </div>
           </div>
         </div>
       </section>
 
-      <!-- TAB DOWNLOAD -->
+      <!-- DOWNLOAD -->
       <section class="tab-pane" id="tab-download">
         <h2><i class="fas fa-download"></i> Download Media</h2>
         <div class="download-container">
-          <!-- Platform Buttons (tanpa Pinterest) -->
+          <!-- Platform Buttons -->
           <div class="platform-buttons">
             <button class="platform-btn active" data-platform="youtube">
               <i class="fab fa-youtube"></i> YouTube
@@ -120,6 +119,20 @@
                 </button>
               </div>
             </div>
+
+            <!-- FORMAT CHOICE (hanya untuk YouTube) -->
+            <div class="format-group" id="formatGroup">
+              <label>Pilih Format:</label>
+              <label class="format-option">
+                <input type="radio" name="format" value="mp3" checked />
+                <span>🎵 MP3 (Audio)</span>
+              </label>
+              <label class="format-option">
+                <input type="radio" name="format" value="mp4" />
+                <span>🎬 MP4 (Video)</span>
+              </label>
+            </div>
+
             <div class="loader" id="dlLoader">
               <div class="spinner"></div>
               <span>Memproses...</span>
@@ -135,7 +148,7 @@
         </div>
       </section>
 
-      <!-- TAB UPLOAD -->
+      <!-- UPLOAD -->
       <section class="tab-pane" id="tab-upload">
         <h2><i class="fas fa-upload"></i> Upload Gambar ke Link</h2>
         <div class="upload-fullpage">
@@ -153,8 +166,6 @@
             <div class="spinner"></div>
             <span>Mengupload...</span>
           </div>
-
-          <!-- Daftar History Upload -->
           <div class="upload-history" id="uploadHistory">
             <h4><i class="fas fa-history"></i> Riwayat Upload (maks. 5)</h4>
             <ul id="historyList"></ul>
@@ -162,7 +173,7 @@
         </div>
       </section>
 
-      <!-- TAB AI (Coming Soon) -->
+      <!-- AI COMING SOON -->
       <section class="tab-pane" id="tab-ai">
         <div class="coming-soon">
           <i class="fas fa-robot"></i>
@@ -171,11 +182,11 @@
           <div class="progress-bar">
             <div class="progress-fill" style="width: 60%"></div>
           </div>
+          <span>60% selesai</span>
         </div>
       </section>
     </main>
 
-    <!-- FOOTER -->
     <footer class="app-footer">
       &copy; 2026 Zeanova Library. All rights reserved.
     </footer>

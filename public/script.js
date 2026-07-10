@@ -38,7 +38,7 @@
     }, 4000);
   }
 
-  // ===== DOWNLOAD - Platform Buttons (tanpa Pinterest) =====
+  // ===== DOWNLOAD - Platform Buttons =====
   const platformBtns = document.querySelectorAll(".platform-btn");
   const platformLabel = document.getElementById("platformLabel");
   const dlUrl = document.getElementById("dlUrl");
@@ -47,23 +47,28 @@
   const dlResult = document.getElementById("dlResult");
   const dlMeta = document.getElementById("dlMeta");
   const dlActions = document.getElementById("dlActions");
+  const formatGroup = document.getElementById("formatGroup");
 
   const platformConfig = {
     youtube: {
       label: "Masukkan URL YouTube",
       placeholder: "https://www.youtube.com/watch?v=...",
+      showFormat: true,
     },
     tiktok: {
       label: "Masukkan URL TikTok",
       placeholder: "https://vt.tiktok.com/... atau https://www.tiktok.com/...",
+      showFormat: false,
     },
     spotify: {
       label: "Masukkan URL Spotify (Single Track)",
       placeholder: "https://open.spotify.com/track/...",
+      showFormat: false,
     },
     instagram: {
       label: "Masukkan URL Instagram",
       placeholder: "https://www.instagram.com/reel/...",
+      showFormat: false,
     },
   };
 
@@ -79,6 +84,8 @@
       dlUrl.placeholder = config.placeholder;
       dlUrl.value = "";
       dlResult.classList.remove("show");
+      // Tampilkan/sembunyikan pilihan format
+      formatGroup.style.display = config.showFormat ? "flex" : "none";
     });
   });
 
@@ -92,6 +99,12 @@
     if (n >= 1e6) return (n / 1e6).toFixed(1) + "M";
     if (n >= 1e3) return (n / 1e3).toFixed(1) + "K";
     return n.toString();
+  }
+
+  // ===== GET FORMAT =====
+  function getSelectedFormat() {
+    const radio = document.querySelector('input[name="format"]:checked');
+    return radio ? radio.value : "mp3";
   }
 
   // ===== DOWNLOAD ACTION =====
@@ -113,7 +126,7 @@
 
       if (platform === "youtube") {
         endpoint = "/api/download/youtube";
-        body.format = "mp3";
+        body.format = getSelectedFormat(); // mp3 atau mp4
       } else if (platform === "tiktok") endpoint = "/api/download/tiktok";
       else if (platform === "spotify") endpoint = "/api/download/spotify";
       else if (platform === "instagram") endpoint = "/api/download/instagram";
@@ -132,8 +145,11 @@
       // Render hasil
       if (platform === "youtube") {
         const d = data.data;
+        const formatLabel =
+          body.format === "mp3" ? "MP3 (Audio)" : "MP4 (Video)";
         dlMeta.innerHTML = `
                     <div><span class="label">Judul</span> ${sanitize(d.title)}</div>
+                    <div><span class="label">Format</span> ${formatLabel}</div>
                     <div><span class="label">Ukuran</span> ${d.size || "—"}</div>
                 `;
         dlActions.innerHTML = `
@@ -229,10 +245,8 @@
   const uploadLoader = document.getElementById("uploadLoader");
   const historyList = document.getElementById("historyList");
 
-  // Key untuk localStorage
   const STORAGE_KEY = "zeanova_upload_history";
 
-  // Fungsi untuk mendapatkan history dari localStorage
   function getHistory() {
     try {
       const data = localStorage.getItem(STORAGE_KEY);
@@ -242,24 +256,21 @@
     }
   }
 
-  // Simpan history ke localStorage
   function saveHistory(history) {
     localStorage.setItem(STORAGE_KEY, JSON.stringify(history));
   }
 
-  // Tambah entri baru (maksimal 5, jika lebih hapus yang paling bawah)
   function addHistoryEntry(name, url) {
     let history = getHistory();
     const newEntry = { name, url, timestamp: Date.now() };
-    history.unshift(newEntry); // tambah di awal (terbaru)
+    history.unshift(newEntry);
     if (history.length > 5) {
-      history = history.slice(0, 5); // ambil 5 pertama
+      history = history.slice(0, 5);
     }
     saveHistory(history);
     renderHistory();
   }
 
-  // Render daftar history
   function renderHistory() {
     const history = getHistory();
     historyList.innerHTML = "";
@@ -278,7 +289,6 @@
     });
   }
 
-  // Upload file
   async function uploadFile(file) {
     const formData = new FormData();
     formData.append("file", file);
@@ -296,17 +306,14 @@
         throw new Error(data.message || "Gagal upload");
       }
 
-      // Tambahkan ke history
       addHistoryEntry(file.name, data.url);
       showToast("✅ Upload berhasil!");
 
-      // Reset drop zone
       dropZone.innerHTML = `
                 <i class="fas fa-cloud-upload-alt"></i>
                 <p>Drag &amp; drop gambar di sini, atau klik untuk pilih file</p>
                 <input type="file" id="fileInput" accept="image/*" style="display:none;" />
             `;
-      // Re-attach event listener untuk file input
       const newFileInput = dropZone.querySelector("#fileInput");
       newFileInput.addEventListener("change", handleFileSelect);
     } catch (err) {
@@ -316,7 +323,6 @@
     }
   }
 
-  // Handler saat file dipilih
   function handleFileSelect(e) {
     if (e.target.files.length) {
       const file = e.target.files[0];
@@ -329,13 +335,11 @@
     }
   }
 
-  // Event listeners untuk drop zone
   dropZone.addEventListener("click", () => {
     const input = document.getElementById("fileInput");
     if (input) input.click();
   });
 
-  // Ganti event listener untuk file input
   const fileInputEl = document.getElementById("fileInput");
   fileInputEl.addEventListener("change", handleFileSelect);
 
@@ -362,8 +366,10 @@
     }
   });
 
-  // Render history saat load
   renderHistory();
+
+  // Sembunyikan format group untuk non-YouTube
+  formatGroup.style.display = "flex";
 
   console.log("🚀 Zeanova Library siap!");
 })();

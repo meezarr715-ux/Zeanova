@@ -15,7 +15,7 @@ body {
   background-attachment: fixed;
 }
 
-/* ===== HEADER GRADASI ===== */
+/* ===== HEADER ===== */
 .app-header {
   background: linear-gradient(135deg, #08131f 0%, #14273e 100%);
   color: #fff;
@@ -119,7 +119,7 @@ body {
   }
 }
 
-/* ===== HOME / BERANDA ===== */
+/* ===== HOME ===== */
 .hero {
   background: rgba(255, 255, 255, 0.06);
   backdrop-filter: blur(12px);
@@ -202,7 +202,7 @@ body {
   color: #8aaac9;
 }
 
-/* ===== DOWNLOAD & UPLOAD ===== */
+/* ===== DOWNLOAD ===== */
 h2 {
   font-size: 1.6rem;
   color: #d0e2f5;
@@ -358,6 +358,49 @@ h2 {
   background: rgba(255, 255, 255, 0.08);
 }
 
+/* ===== FORMAT CHOICE ===== */
+.format-group {
+  margin: 0.8rem 0 1.2rem;
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 0.8rem 1.5rem;
+  background: rgba(255, 255, 255, 0.04);
+  padding: 0.6rem 1rem;
+  border-radius: 2rem;
+  border: 1px solid rgba(255, 255, 255, 0.06);
+}
+
+.format-group label:first-child {
+  font-weight: 600;
+  color: #b0c8de;
+  margin-right: 0.5rem;
+}
+
+.format-option {
+  display: flex;
+  align-items: center;
+  gap: 0.4rem;
+  color: #c0d8ee;
+  cursor: pointer;
+  font-size: 0.95rem;
+}
+
+.format-option input[type="radio"] {
+  accent-color: #1a73e8;
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+
+.format-option span {
+  font-weight: 500;
+}
+
+.format-option:hover {
+  color: #fff;
+}
+
 .loader {
   display: none;
   align-items: center;
@@ -471,7 +514,7 @@ h2 {
   border-color: #6ab0f7;
 }
 
-/* ===== HISTORY UPLOAD ===== */
+/* ===== HISTORY ===== */
 .upload-history {
   margin-top: 2rem;
   padding-top: 1rem;
@@ -669,6 +712,14 @@ h2 {
   }
   .coming-soon {
     padding: 2rem 1rem;
+  }
+  .format-group {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 0.4rem;
+    background: transparent;
+    padding: 0.5rem 0;
+    border: none;
   }
 }
 
