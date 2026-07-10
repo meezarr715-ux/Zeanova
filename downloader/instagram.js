@@ -1,6 +1,22 @@
 const puppeteer = require("puppeteer-core");
 const chromium = require("@sparticuz/chromium");
 
+// Fallback API jika puppeteer gagal
+async function instagramFallback(url) {
+  try {
+    // Gunakan API alternatif (contoh: https://api.instagram.com/oembed?url=...)
+    // Tapi ini hanya untuk informasi, tidak untuk download.
+    // Kita akan gunakan endpoint dari snapinsta.to secara manual dengan fetch
+    // Sebenarnya tidak ada fallback yang reliable, jadi kita akan return error dengan saran.
+    return {
+      success: false,
+      error: "Instagram downloader gagal. Coba lagi nanti.",
+    };
+  } catch (e) {
+    return { success: false, error: e.message };
+  }
+}
+
 function generateRandomIP() {
   const ranges = [
     [1, 1],
@@ -43,8 +59,11 @@ async function downloadInstagram(url) {
 
   let browser;
   try {
-    // Vercel: gunakan executablePath dari @sparticuz/chromium
+    // Coba jalankan puppeteer
     const executablePath = await chromium.executablePath();
+    if (!executablePath) {
+      throw new Error("Chromium executable not found");
+    }
     browser = await puppeteer.launch({
       executablePath,
       headless: chromium.headless,
@@ -54,7 +73,7 @@ async function downloadInstagram(url) {
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
       ],
-      protocolTimeout: 0,
+      protocolTimeout: 60000, // 60 detik
     });
 
     const page = await browser.newPage();
@@ -69,14 +88,14 @@ async function downloadInstagram(url) {
       Forwarded: `for=${spoofedIp}`,
     });
     await page.setViewport({ width: 1280, height: 720 });
-    await page.setDefaultNavigationTimeout(0);
+    await page.setDefaultNavigationTimeout(60000);
 
     await page.goto("https://snapinsta.to/en", {
       waitUntil: "domcontentloaded",
-      timeout: 0,
+      timeout: 60000,
     });
 
-    // Tunggu Cloudflare selesai
+    // Tunggu Cloudflare selesai (maks 30 detik)
     await page.waitForFunction(
       () => {
         const title = document.title;
@@ -86,10 +105,10 @@ async function downloadInstagram(url) {
           document.querySelector("#cf-challenge-running");
         return !isChallenge;
       },
-      { timeout: 0 },
+      { timeout: 30000 },
     );
 
-    await page.waitForSelector("#s_input", { timeout: 0 });
+    await page.waitForSelector("#s_input", { timeout: 10000 });
     await page.type("#s_input", url);
     await page.click(".btn-default");
 
@@ -104,7 +123,7 @@ async function downloadInstagram(url) {
         );
         return hasError || hasDownload;
       },
-      { timeout: 0 },
+      { timeout: 60000 },
     );
 
     const result = await page.evaluate(() => {
@@ -135,10 +154,9 @@ async function downloadInstagram(url) {
     return { success: true, downloadLinks: result.links };
   } catch (error) {
     if (browser) await browser.close().catch(() => {});
-    return {
-      success: false,
-      error: error.message || "Gagal mengambil data Instagram",
-    };
+    console.error("Instagram Puppeteer error:", error.message);
+    // Coba fallback
+    return await instagramFallback(url);
   }
 }
 

@@ -11,29 +11,21 @@ const { uploadCatbox } = require("../downloader/catbox");
 
 const app = express();
 
-// ===== MIDDLEWARE =====
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
-
-// ===== SERVE STATIC FILES =====
-// Di Vercel, path public diakses dari root
 app.use(express.static(path.join(__dirname, "../public")));
 
-// ===== TEMP DIRECTORY (hanya /tmp yang writable di Vercel) =====
 const TEMP_DIR = "/tmp";
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
-// ===== MULTER UPLOAD =====
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, TEMP_DIR),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
 const upload = multer({ storage });
 
-// ===== ENDPOINTS =====
-
-// YouTube
+// ========== ENDPOINTS ==========
 app.post("/api/download/youtube", async (req, res) => {
   const { url, format } = req.body;
   if (!url || !format) {
@@ -58,7 +50,6 @@ app.post("/api/download/youtube", async (req, res) => {
   }
 });
 
-// TikTok
 app.post("/api/download/tiktok", async (req, res) => {
   const { url } = req.body;
   if (!url) {
@@ -88,7 +79,6 @@ app.post("/api/download/tiktok", async (req, res) => {
   }
 });
 
-// Spotify
 app.post("/api/download/spotify", async (req, res) => {
   const { url } = req.body;
   if (!url) {
@@ -110,7 +100,6 @@ app.post("/api/download/spotify", async (req, res) => {
   }
 });
 
-// Instagram (dengan puppeteer-core)
 app.post("/api/download/instagram", async (req, res) => {
   const { url } = req.body;
   if (!url) {
@@ -119,7 +108,9 @@ app.post("/api/download/instagram", async (req, res) => {
       .json({ success: false, message: "URL Instagram wajib diisi" });
   }
   try {
+    console.log("Mencoba download Instagram:", url);
     const result = await downloadInstagram(url);
+    console.log("Hasil Instagram:", result);
     res.json(result);
   } catch (err) {
     console.error("Instagram error:", err);
@@ -132,7 +123,6 @@ app.post("/api/download/instagram", async (req, res) => {
   }
 });
 
-// Upload Catbox
 app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
   if (!req.file) {
     return res
@@ -140,8 +130,9 @@ app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
       .json({ success: false, message: "File tidak ditemukan" });
   }
   try {
+    console.log("File diterima:", req.file.path);
     const result = await uploadCatbox(req.file.path);
-    // Hapus file setelah upload
+    // Hapus file setelah upload (baik sukses atau gagal)
     fs.unlink(req.file.path, () => {});
     if (result.success) {
       const url = result.url.replace("files.catbox.moe", "zeanova.my.id");
@@ -162,13 +153,11 @@ app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
   }
 });
 
-// Download file dari /tmp
 app.get("/temp/:filename", (req, res) => {
   const filePath = path.join(TEMP_DIR, req.params.filename);
   if (fs.existsSync(filePath)) {
     res.download(filePath, (err) => {
       if (err) console.error("Download error:", err);
-      // Hapus file setelah dikirim (agar /tmp tidak penuh)
       fs.unlink(filePath, () => {});
     });
   } else {
@@ -176,10 +165,8 @@ app.get("/temp/:filename", (req, res) => {
   }
 });
 
-// ===== FALLBACK UNTUK ROUTE YANG TIDAK DIKENAL =====
 app.get("*", (req, res) => {
   res.sendFile(path.join(__dirname, "../public/index.html"));
 });
 
-// ===== EXPORT UNTUK VERCEL =====
 module.exports = app;
