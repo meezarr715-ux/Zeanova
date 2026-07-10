@@ -17,7 +17,7 @@
     "cors": "^2.8.5",
     "multer": "^1.4.5-lts.1",
     "puppeteer-core": "^21.6.1",
-    "@sparticuz/chromium": "^115.0.0",
+    "@sparticuz/chromium": "^149.0.0",
     "got-scraping": "^4.1.0"
   },
   "devDependencies": {
