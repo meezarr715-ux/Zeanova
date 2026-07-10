@@ -1,0 +1,185 @@
+<!doctype html>
+<html lang="id">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Zeanova Library</title>
+    <link
+      rel="icon"
+      href="https://files.catbox.moe/ogv2ae.jpg"
+      type="image/jpeg"
+    />
+    <link
+      rel="stylesheet"
+      href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.0.0-beta3/css/all.min.css"
+    />
+    <link rel="stylesheet" href="/style.css" />
+  </head>
+  <body>
+    <!-- HEADER -->
+    <header class="app-header">
+      <div class="brand">
+        <img
+          src="https://files.catbox.moe/ogv2ae.jpg"
+          alt="Zeanova Library"
+          class="brand-icon"
+        />
+        <div>
+          <h1>Zeanova Library</h1>
+          <span>Download &amp; Upload Media</span>
+        </div>
+      </div>
+      <nav class="nav-menu">
+        <a href="#" class="nav-link active" data-tab="home">Beranda</a>
+        <a href="#" class="nav-link" data-tab="download">Download</a>
+        <a href="#" class="nav-link" data-tab="upload">Upload Gambar</a>
+        <a href="#" class="nav-link" data-tab="ai">AI Chat</a>
+      </nav>
+    </header>
+
+    <!-- MAIN -->
+    <main class="main-content">
+      <!-- TAB HOME -->
+      <section class="tab-pane active" id="tab-home">
+        <div class="hero">
+          <div class="hero-thumbnail">
+            <img
+              src="https://files.catbox.moe/qv91yi.jpg"
+              alt="Zeanova Library Banner"
+            />
+          </div>
+          <div class="hero-text">
+            <h2>Selamat Datang di Zeanova Library</h2>
+            <p>
+              Tempat terbaik untuk mengunduh dan mengunggah media dari berbagai
+              platform populer. Nikmati kemudahan dalam mengakses konten favorit
+              Anda!
+            </p>
+          </div>
+          <div class="feature-grid">
+            <div class="feature-item">
+              <i class="fab fa-youtube"></i>
+              <h3>YouTube</h3>
+              <p>MP3 / MP4</p>
+            </div>
+            <div class="feature-item">
+              <i class="fab fa-tiktok"></i>
+              <h3>TikTok</h3>
+              <p>Video & Musik</p>
+            </div>
+            <div class="feature-item">
+              <i class="fab fa-spotify"></i>
+              <h3>Spotify</h3>
+              <p>Single Track</p>
+            </div>
+            <div class="feature-item">
+              <i class="fab fa-instagram"></i>
+              <h3>Instagram</h3>
+              <p>Reels & Post</p>
+            </div>
+            <div class="feature-item">
+              <i class="fas fa-upload"></i>
+              <h3>Upload Gambar</h3>
+              <p>Ke Link Zeanova</p>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB DOWNLOAD -->
+      <section class="tab-pane" id="tab-download">
+        <h2><i class="fas fa-download"></i> Download Media</h2>
+        <div class="download-container">
+          <!-- Platform Buttons (tanpa Pinterest) -->
+          <div class="platform-buttons">
+            <button class="platform-btn active" data-platform="youtube">
+              <i class="fab fa-youtube"></i> YouTube
+            </button>
+            <button class="platform-btn" data-platform="tiktok">
+              <i class="fab fa-tiktok"></i> TikTok
+            </button>
+            <button class="platform-btn" data-platform="spotify">
+              <i class="fab fa-spotify"></i> Spotify
+            </button>
+            <button class="platform-btn" data-platform="instagram">
+              <i class="fab fa-instagram"></i> Instagram
+            </button>
+          </div>
+
+          <div class="download-box">
+            <div class="form-group">
+              <label id="platformLabel" for="dlUrl">Masukkan URL YouTube</label>
+              <div class="input-row">
+                <input
+                  type="text"
+                  id="dlUrl"
+                  placeholder="https://www.youtube.com/watch?v=..."
+                />
+                <button id="dlBtn" class="btn btn-primary">
+                  <i class="fas fa-arrow-down"></i> Download
+                </button>
+              </div>
+            </div>
+            <div class="loader" id="dlLoader">
+              <div class="spinner"></div>
+              <span>Memproses...</span>
+            </div>
+            <div class="result" id="dlResult">
+              <h3>
+                <i class="fas fa-check-circle" style="color: #1a8a4a"></i> Hasil
+              </h3>
+              <div class="meta" id="dlMeta"></div>
+              <div class="actions" id="dlActions"></div>
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB UPLOAD -->
+      <section class="tab-pane" id="tab-upload">
+        <h2><i class="fas fa-upload"></i> Upload Gambar ke Link</h2>
+        <div class="upload-fullpage">
+          <div class="drop-zone" id="dropZone">
+            <i class="fas fa-cloud-upload-alt"></i>
+            <p>Drag &amp; drop gambar di sini, atau klik untuk pilih file</p>
+            <input
+              type="file"
+              id="fileInput"
+              accept="image/*"
+              style="display: none"
+            />
+          </div>
+          <div class="loader" id="uploadLoader">
+            <div class="spinner"></div>
+            <span>Mengupload...</span>
+          </div>
+
+          <!-- Daftar History Upload -->
+          <div class="upload-history" id="uploadHistory">
+            <h4><i class="fas fa-history"></i> Riwayat Upload (maks. 5)</h4>
+            <ul id="historyList"></ul>
+          </div>
+        </div>
+      </section>
+
+      <!-- TAB AI (Coming Soon) -->
+      <section class="tab-pane" id="tab-ai">
+        <div class="coming-soon">
+          <i class="fas fa-robot"></i>
+          <h2>Fitur AI Chat</h2>
+          <p>Sedang dalam pengembangan. Akan segera hadir!</p>
+          <div class="progress-bar">
+            <div class="progress-fill" style="width: 60%"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+
+    <!-- FOOTER -->
+    <footer class="app-footer">
+      &copy; 2026 Zeanova Library. All rights reserved.
+    </footer>
+
+    <script src="/script.js"></script>
+  </body>
+</html>
