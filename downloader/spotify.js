@@ -19,6 +19,7 @@ async function downloadTrack(trackUrl) {
         error: "Gagal mendapatkan job ID",
         url: trackUrl,
       };
+
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 3000));
       const statusRes = await axios.get(
@@ -39,9 +40,9 @@ async function downloadTrack(trackUrl) {
             download_url: downloadUrl,
             metadata: data.post
               ? {
-                  title: data.post.name || "Unknown",
-                  artist: data.post.artist || "Unknown",
-                  album: data.post.album || "Unknown",
+                  title: data.post.name || "Tidak diketahui",
+                  artist: data.post.artist || "Tidak diketahui",
+                  album: data.post.album || "Tidak diketahui",
                   image: data.post.image || "",
                 }
               : null,
@@ -55,36 +56,11 @@ async function downloadTrack(trackUrl) {
         };
       }
     }
-    return {
-      success: false,
-      error: "Timeout menunggu konversi",
-      url: trackUrl,
-    };
+    return { success: false, error: "Waktu habis (timeout)", url: trackUrl };
   } catch (error) {
-    try {
-      const fallbackRes = await axios.get(
-        `https://api.spotifydown.com/download/${trackUrl}`,
-        {
-          headers: { "User-Agent": "Mozilla/5.0" },
-        },
-      );
-      if (fallbackRes.data && fallbackRes.data.link) {
-        return {
-          success: true,
-          download_url: fallbackRes.data.link,
-          metadata: {
-            title: fallbackRes.data.title || "Unknown",
-            artist: fallbackRes.data.artist || "Unknown",
-            album: fallbackRes.data.album || "Unknown",
-          },
-        };
-      }
-    } catch (e) {
-      // Gagal juga, return error
-    }
     return {
       success: false,
-      error: error.message || "Gagal mengunduh Spotify",
+      error: error.message || "Terjadi kesalahan",
       url: trackUrl,
     };
   }

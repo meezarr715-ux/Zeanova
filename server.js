@@ -105,7 +105,7 @@ app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
   }
 });
 
-app.get("/zean/:filename", (req, res) => {
+app.get("/temp/:filename", (req, res) => {
   const filePath = path.join(TEMP_DIR, req.params.filename);
   if (fs.existsSync(filePath)) {
     res.download(filePath, (err) => {

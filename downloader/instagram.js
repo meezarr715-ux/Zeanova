@@ -87,7 +87,6 @@ async function downloadInstagram(url) {
     await page.type("#s_input", url);
     await page.click(".btn-default");
 
-    // Tunggu hasil
     await page.waitForFunction(
       () => {
         const searchResult = document.querySelector("#search-result");
@@ -106,8 +105,11 @@ async function downloadInstagram(url) {
       const errorEl = searchResult.querySelector(".error");
       if (errorEl) return { error: errorEl.innerText.trim() };
 
-      // Kumpulkan semua link
-      const allLinks = [];
+      // Klasifikasi link: foto dan video
+      const links = [];
+      const photoLinks = [];
+      const videoLinks = [];
+
       searchResult.querySelectorAll("a").forEach((a) => {
         const href = a.getAttribute("href");
         const text = a.innerText.trim().toLowerCase();
@@ -116,47 +118,40 @@ async function downloadInstagram(url) {
           href.startsWith("http") &&
           (href.includes("snapcdn") || href.includes("token="))
         ) {
-          // Kategorikan berdasarkan teks atau tipe file
-          let type = "unknown";
+          // Cek apakah link menuju gambar atau video
           if (
-            text.includes("video") ||
-            href.includes(".mp4") ||
-            href.includes("video")
-          ) {
-            type = "video";
-          } else if (
+            href.match(/\.(jpg|jpeg|png|gif|webp)/i) ||
             text.includes("photo") ||
-            text.includes("image") ||
-            href.includes(".jpg") ||
-            href.includes(".png")
+            text.includes("gambar")
           ) {
-            type = "photo";
+            photoLinks.push({ url: href, type: "Photo" });
           } else {
-            // Coba deteksi dari URL
-            if (href.includes("video")) type = "video";
-            else type = "photo";
+            videoLinks.push({ url: href, type: "Video" });
           }
-          allLinks.push({ url: href, type: type });
         }
       });
 
-      // Pisahkan foto dan video
-      const photos = allLinks.filter((l) => l.type === "photo");
-      const videos = allLinks.filter((l) => l.type === "video");
-
-      return { photos, videos, total: allLinks.length };
+      // Gabungkan, prioritaskan foto
+      const allLinks = [...photoLinks, ...videoLinks];
+      return {
+        links: allLinks,
+        photoCount: photoLinks.length,
+        videoCount: videoLinks.length,
+      };
     });
 
     await browser.close();
 
     if (result.error) return { success: false, error: result.error };
-    if (result.total === 0)
-      return { success: false, error: "Tidak ada link ditemukan" };
+    if (!result.links || result.links.length === 0)
+      return { success: false, error: "Tidak ada link download ditemukan" };
 
+    // Kembalikan dengan info foto/video
     return {
       success: true,
-      photos: result.photos.map((p) => p.url),
-      videos: result.videos.map((v) => v.url),
+      downloadLinks: result.links,
+      photoCount: result.photoCount,
+      videoCount: result.videoCount,
     };
   } catch (error) {
     if (browser) await browser.close().catch(() => {});

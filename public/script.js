@@ -12,20 +12,24 @@
   const navToggle = document.getElementById("navToggle");
   const navMenu = document.getElementById("navMenu");
 
-  // Fungsi untuk reset semua hasil download dan convert
-  function resetAllResults() {
+  // Fungsi untuk clear semua hasil download & convert saat pindah nav
+  function clearAllResults() {
     // Hapus semua result boxes
-    document.querySelectorAll(".result-box").forEach((el) => {
-      el.classList.remove("show");
-      el.innerHTML = "";
+    document.querySelectorAll(".result-box").forEach((box) => {
+      box.classList.remove("show");
+      box.innerHTML = "";
     });
-    // Reset convert: kosongkan link history (kecuali sessionStorage akan di-handle)
-    // Tapi kita akan hapus sessionStorage juga
-    sessionStorage.removeItem("zeanova_links");
+    // Hapus riwayat convert (link history)
     const linkHistory = document.getElementById("linkHistory");
     if (linkHistory) {
-      linkHistory.innerHTML = `<div class="empty-msg">Belum ada link yang dihasilkan.</div>`;
+      linkHistory.innerHTML =
+        '<div class="empty-msg">Belum ada link yang dihasilkan.</div>';
     }
+    // Hapus sessionStorage agar tidak ada jejak
+    sessionStorage.removeItem("zeanova_links");
+    // Reset progress bar
+    const progressFill = document.getElementById("uploadProgress");
+    if (progressFill) progressFill.style.width = "0%";
     // Reset upload area
     const uploadArea = document.getElementById("uploadArea");
     if (uploadArea) {
@@ -35,9 +39,8 @@
         <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
         <input type="file" id="fileInput" accept="image/*" style="display:none;" />
       `;
+      attachUploadEvents(); // re-attach
     }
-    const uploadProgress = document.getElementById("uploadProgress");
-    if (uploadProgress) uploadProgress.style.width = "0%";
   }
 
   navItems.forEach((item) => {
@@ -49,8 +52,8 @@
         tabContents[key].classList.toggle("active", key === page);
       });
       navMenu.classList.remove("open");
-      // Reset semua hasil saat pindah nav
-      resetAllResults();
+      // Hapus semua jejak link saat pindah nav
+      clearAllResults();
     });
   });
 
@@ -70,10 +73,10 @@
       dlPanels.forEach((p) => {
         p.classList.toggle("active", p.dataset.platform === platform);
       });
-      // Reset hasil saat pindah tab downloader
-      document.querySelectorAll(".result-box").forEach((el) => {
-        el.classList.remove("show");
-        el.innerHTML = "";
+      // Saat ganti tab download, clear hasil sebelumnya
+      document.querySelectorAll(".result-box").forEach((box) => {
+        box.classList.remove("show");
+        box.innerHTML = "";
       });
     });
   });
@@ -89,18 +92,6 @@
     container.classList.add("show");
   }
 
-  // ----- Format buttons YouTube -----
-  let selectedFormat = "mp3";
-  document.querySelectorAll(".format-btn").forEach((btn) => {
-    btn.addEventListener("click", () => {
-      document
-        .querySelectorAll(".format-btn")
-        .forEach((b) => b.classList.remove("active"));
-      btn.classList.add("active");
-      selectedFormat = btn.dataset.format;
-    });
-  });
-
   // ----- YouTube -----
   const ytUrl = document.getElementById("ytUrl");
   const ytResult = document.getElementById("ytResult");
@@ -109,7 +100,9 @@
     .addEventListener("click", async () => {
       const url = ytUrl.value.trim();
       if (!url) return alert("Masukkan URL YouTube.");
-      const format = selectedFormat;
+      const format =
+        document.querySelector('input[name="ytFormat"]:checked')?.value ||
+        "mp3";
       showLoading(ytResult);
       try {
         const resp = await fetch("/api/download/youtube", {
@@ -139,7 +132,7 @@
       }
     });
 
-  // ----- TikTok -----
+  // ----- TikTok (3 button: HD, WM, Audio) -----
   const ttUrl = document.getElementById("ttUrl");
   const ttResult = document.getElementById("ttResult");
   document
@@ -160,48 +153,50 @@
         const meta = r.metadata || {};
         const author = r.author || {};
         const stats = r.stats || {};
-        const isSlide = meta.type === "image_slide";
 
         let html = `<div class="success"><i class="fas fa-check-circle"></i> Berhasil</div>`;
         html += `<div><strong>Deskripsi:</strong> ${escapeHtml(meta.description || "—")}</div>`;
         html += `<div><strong>Author:</strong> ${escapeHtml(author.nickname || author.uniqueId || "—")}</div>`;
         html += `<div><strong>Like:</strong> ${formatNumber(stats.likes)}</div>`;
 
-        // Buat tombol sesuai tipe
-        html += `<div class="btn-group">`;
-        if (isSlide) {
-          // Slide foto: tampilkan tombol download gambar dan audio
+        if (r.type === "slide") {
+          // FOTO: hanya 1 button untuk download semua foto sekaligus
           const images = r.originalUrl?.images || [];
           if (images.length > 0) {
-            // Gabungkan semua foto dalam satu zip? Tapi kita beri tombol per foto
+            // Buat ZIP atau download satu per satu? Kita berikan link ke gambar pertama dengan opsi download all
+            // Karena tidak ada API zip, kita berikan link gambar pertama dan info
+            html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
             images.forEach((img, i) => {
-              html += `<a href="${img}" class="btn-download" target="_blank"><i class="fas fa-image"></i> Foto ${i + 1}</a>`;
+              html += `<a href="${img}" class="btn-download" style="display:inline-flex; background:rgba(255,255,255,0.08); color:var(--text-primary);" target="_blank" download><i class="fas fa-image"></i> Gambar ${i + 1}</a>`;
             });
-          }
-          if (r.originalUrl?.audio) {
-            html += `<a href="${r.originalUrl.audio}" class="btn-download" target="_blank"><i class="fas fa-music"></i> Audio</a>`;
+            if (r.originalUrl?.audio) {
+              html += `<a href="${r.originalUrl.audio}" class="btn-download" style="display:inline-flex;" target="_blank"><i class="fas fa-music"></i> Audio</a>`;
+            }
+            html += `</div>`;
+          } else {
+            html += `<div class="error">Tidak ada gambar ditemukan.</div>`;
           }
         } else {
-          // Video: 3 tombol (HD, WM, Audio)
+          // VIDEO: 3 button (HD, WM, Audio)
           const urls = r.originalUrl || {};
-          if (urls.hd_nonwatermark) {
-            html += `<a href="${urls.hd_nonwatermark}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
+          const cloudUrls = r.cloudUrl || {};
+          html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
+          // HD (prioritaskan cloud jika ada)
+          const hdUrl = cloudUrls.hd_nonwatermark || urls.hd_nonwatermark;
+          if (hdUrl) {
+            html += `<a href="${hdUrl}" class="btn-download" style="display:inline-flex;" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
           }
-          if (urls.watermark) {
-            html += `<a href="${urls.watermark}" class="btn-download" target="_blank"><i class="fas fa-water"></i> Download dengan WM</a>`;
+          // WM
+          const wmUrl = cloudUrls.watermark || urls.watermark;
+          if (wmUrl) {
+            html += `<a href="${wmUrl}" class="btn-download" style="display:inline-flex; background:rgba(255,255,255,0.08); color:var(--text-primary);" target="_blank"><i class="fas fa-water"></i> Download WM</a>`;
           }
+          // Audio
           if (r.music && r.music.playUrl) {
-            html += `<a href="${r.music.playUrl}" class="btn-download" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
+            html += `<a href="${r.music.playUrl}" class="btn-download" style="display:inline-flex;" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
           }
-          // Jika ada cloudUrl, tambahkan juga
-          if (r.cloudUrl && r.cloudUrl.hd_nonwatermark) {
-            html += `<a href="${r.cloudUrl.hd_nonwatermark}" class="btn-download" target="_blank"><i class="fas fa-cloud"></i> Cloud HD</a>`;
-          }
-          if (r.cloudUrl && r.cloudUrl.watermark) {
-            html += `<a href="${r.cloudUrl.watermark}" class="btn-download" target="_blank"><i class="fas fa-cloud"></i> Cloud WM</a>`;
-          }
+          html += `</div>`;
         }
-        html += `</div>`;
         showResult(ttResult, html);
       } catch (err) {
         showResult(
@@ -211,7 +206,7 @@
       }
     });
 
-  // ----- Spotify -----
+  // ----- Spotify (perbaikan) -----
   const spUrl = document.getElementById("spUrl");
   const spResult = document.getElementById("spResult");
   document
@@ -234,7 +229,7 @@
           html += `<div><strong>Artis:</strong> ${escapeHtml(data.metadata.artist)}</div>`;
           html += `<div><strong>Album:</strong> ${escapeHtml(data.metadata.album)}</div>`;
         }
-        html += `<div class="btn-group"><a href="${data.download_url}" class="btn-download" target="_blank"><i class="fas fa-download"></i> Download</a></div>`;
+        html += `<div style="margin-top:12px;"><a href="${data.download_url}" class="btn-download" style="display:inline-flex;" target="_blank"><i class="fas fa-download"></i> Download</a></div>`;
         showResult(spResult, html);
       } catch (err) {
         showResult(
@@ -244,7 +239,7 @@
       }
     });
 
-  // ----- Instagram -----
+  // ----- Instagram (2 button: Download Foto & Download Video) -----
   const igUrl = document.getElementById("igUrl");
   const igResult = document.getElementById("igResult");
   document
@@ -261,30 +256,29 @@
         });
         const data = await resp.json();
         if (!resp.ok || !data.success) throw new Error(data.error || "Gagal");
+        const links = data.downloadLinks || [];
+        const photoCount = data.photoCount || 0;
+        const videoCount = data.videoCount || 0;
 
-        let html = `<div class="success"><i class="fas fa-check-circle"></i> Berhasil</div>`;
-        html += `<div class="btn-group">`;
+        if (links.length === 0) throw new Error("Tidak ada link ditemukan");
 
-        // Foto (selalu ada)
-        if (data.photos && data.photos.length > 0) {
-          // Jika banyak foto, gabungkan dalam satu tombol download semua? Kita beri satu tombol untuk semua foto
-          // Karena snapinsta memberikan link per foto, kita buat satu tombol yang mengarah ke link pertama atau kita bisa buat daftar
-          // Tapi lebih baik beri satu tombol "Download Foto" yang mengunduh semua (kita beri link ke yang pertama, tapi user bisa pilih)
-          // Kita buat satu tombol untuk semua foto (dengan multiple link)
-          if (data.photos.length === 1) {
-            html += `<a href="${data.photos[0]}" class="btn-download" target="_blank"><i class="fas fa-image"></i> Download Foto</a>`;
-          } else {
-            // Tampilkan tombol untuk setiap foto
-            data.photos.forEach((photo, i) => {
-              html += `<a href="${photo}" class="btn-download" target="_blank"><i class="fas fa-image"></i> Foto ${i + 1}</a>`;
-            });
-          }
+        let html = `<div class="success"><i class="fas fa-check-circle"></i> ${links.length} link ditemukan</div>`;
+        html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
+
+        // Button Download Foto (semua foto sekaligus)
+        const photoLinks = links.filter((l) => l.type === "Photo");
+        if (photoLinks.length > 0) {
+          // Jika lebih dari 1 foto, kita berikan link ke semua foto
+          photoLinks.forEach((link, idx) => {
+            html += `<a href="${link.url}" class="btn-download" style="display:inline-flex; background:rgba(255,255,255,0.08); color:var(--text-primary);" target="_blank" download><i class="fas fa-image"></i> Foto ${idx + 1}</a>`;
+          });
         }
 
-        // Video (jika ada)
-        if (data.videos && data.videos.length > 0) {
-          data.videos.forEach((video, i) => {
-            html += `<a href="${video}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Video ${i + 1}</a>`;
+        // Button Download Video (hanya jika ada video)
+        const videoLinks = links.filter((l) => l.type === "Video");
+        if (videoLinks.length > 0) {
+          videoLinks.forEach((link, idx) => {
+            html += `<a href="${link.url}" class="btn-download" style="display:inline-flex;" target="_blank" download><i class="fas fa-video"></i> Video ${idx + 1}</a>`;
           });
         }
 
@@ -489,11 +483,9 @@
   });
 
   // ========== INIT ==========
-  // Load history
-  loadHistory();
-
-  // Reset semua saat pertama kali load (agar bersih)
-  resetAllResults();
+  // Tidak load history apapun agar kosong saat refresh
+  linkHistory.innerHTML = `<div class="empty-msg">Belum ada link yang dihasilkan.</div>`;
+  sessionStorage.removeItem("zeanova_links");
 
   console.log("🚀 Zeanova Library siap!");
 })();

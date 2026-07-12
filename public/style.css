@@ -380,33 +380,36 @@ body {
   color: var(--text-secondary);
 }
 
-/* ===== FORMAT BUTTONS (YouTube) ===== */
-.format-group {
+/* Format selector untuk YouTube (rapi) */
+.format-selector {
   display: flex;
-  gap: 6px;
+  gap: 12px;
   background: rgba(255, 255, 255, 0.04);
+  padding: 8px 14px;
   border-radius: 60px;
-  padding: 4px;
   border: 1px solid rgba(255, 255, 255, 0.06);
 }
-.format-btn {
-  padding: 10px 20px;
-  border: none;
-  border-radius: 60px;
-  background: transparent;
+.format-selector label {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  font-weight: 500;
+  font-size: 0.9rem;
   color: var(--text-secondary);
-  font-weight: 600;
-  font-size: 0.85rem;
   cursor: pointer;
   transition: var(--transition);
 }
-.format-btn:hover {
+.format-selector label:hover {
   color: #fff;
 }
-.format-btn.active {
-  background: var(--neon-cyan);
-  color: #0b1a2e;
-  box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+.format-selector input[type="radio"] {
+  accent-color: var(--neon-cyan);
+  width: 16px;
+  height: 16px;
+  cursor: pointer;
+}
+.format-selector input[type="radio"]:checked + span {
+  color: var(--neon-cyan);
 }
 
 .btn-download {
@@ -484,15 +487,32 @@ body {
 .result-box a:hover {
   text-decoration: underline;
 }
-.result-box .btn-group {
+.result-box .link-item {
   display: flex;
-  flex-wrap: wrap;
+  align-items: center;
   gap: 10px;
-  margin-top: 12px;
+  padding: 6px 0;
+  border-bottom: 1px solid rgba(255, 255, 255, 0.04);
 }
-.result-box .btn-group .btn-download {
-  font-size: 0.85rem;
-  padding: 10px 20px;
+.result-box .link-item:last-child {
+  border-bottom: none;
+}
+.result-box .link-item i {
+  color: var(--neon-cyan);
+  width: 20px;
+}
+.result-box .link-item .dl-btn {
+  background: rgba(0, 212, 255, 0.08);
+  padding: 2px 12px;
+  border-radius: 40px;
+  font-size: 0.8rem;
+  color: var(--neon-cyan);
+  border: 1px solid var(--border-glow);
+  transition: var(--transition);
+  margin-left: auto;
+}
+.result-box .link-item .dl-btn:hover {
+  background: rgba(0, 212, 255, 0.18);
 }
 
 /* ===== CONVERT ===== */
@@ -730,6 +750,10 @@ body {
   .btn-download {
     justify-content: center;
   }
+  .format-selector {
+    justify-content: center;
+    padding: 8px 12px;
+  }
 
   .convert-box {
     padding: 24px;
@@ -751,14 +775,5 @@ body {
   .dl-tab {
     padding: 8px 16px;
     font-size: 0.8rem;
-  }
-  .format-group {
-    width: 100%;
-    justify-content: stretch;
-  }
-  .format-btn {
-    flex: 1;
-    text-align: center;
-    padding: 8px 12px;
   }
 }

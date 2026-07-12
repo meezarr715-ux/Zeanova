@@ -1,6 +1,6 @@
 {
   "name": "zeanova-library",
-  "version": "2.8.0",
+  "version": "2.0.0",
   "description": "Zeanova Library - Downloader YouTube, TikTok, Spotify, Instagram & Convert to Catbox",
   "main": "server.js",
   "scripts": {
