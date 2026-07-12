@@ -151,7 +151,6 @@ async function downloadTiktok(url) {
           isOriginal: itemStruct.music?.original,
         },
         stats,
-        type: "slide",
       };
 
       return { status: true, result: finalResult };
@@ -212,7 +211,6 @@ async function downloadTiktok(url) {
         isOriginal: itemStruct.music?.original,
       },
       stats,
-      type: "video",
     };
 
     if (watermarkUrl) {

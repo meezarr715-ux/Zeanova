@@ -14,12 +14,7 @@ async function downloadTrack(trackUrl) {
     );
     const trackId = res.data.jobId;
     if (!trackId)
-      return {
-        success: false,
-        error: "Gagal mendapatkan job ID",
-        url: trackUrl,
-      };
-
+      return { success: false, error: "Failed to get job ID", url: trackUrl };
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 3000));
       const statusRes = await axios.get(
@@ -40,29 +35,21 @@ async function downloadTrack(trackUrl) {
             download_url: downloadUrl,
             metadata: data.post
               ? {
-                  title: data.post.name || "Tidak diketahui",
-                  artist: data.post.artist || "Tidak diketahui",
-                  album: data.post.album || "Tidak diketahui",
-                  image: data.post.image || "",
+                  title: data.post.name,
+                  artist: data.post.artist,
+                  album: data.post.album,
+                  image: data.post.image,
                 }
               : null,
           };
         }
       } else if (data.status === "error" || data.status === "failed") {
-        return {
-          success: false,
-          error: "Konversi gagal di server",
-          url: trackUrl,
-        };
+        return { success: false, error: "Conversion failed", url: trackUrl };
       }
     }
-    return { success: false, error: "Waktu habis (timeout)", url: trackUrl };
+    return { success: false, error: "Timeout", url: trackUrl };
   } catch (error) {
-    return {
-      success: false,
-      error: error.message || "Terjadi kesalahan",
-      url: trackUrl,
-    };
+    return { success: false, error: error.message, url: trackUrl };
   }
 }
 
