@@ -10,15 +10,15 @@ const { downloadInstagram } = require("./downloader/instagram");
 const { uploadCatbox } = require("./downloader/catbox");
 
 const app = express();
+const PORT = process.env.PORT || 3000;
 
 app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 app.use(express.static(path.join(__dirname, "public")));
 
-// Gunakan /tmp untuk Vercel (writable)
-const TEMP_DIR = "/tmp";
-if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
+const TEMP_DIR = path.join(__dirname, "temp");
+if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR);
 
 const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, TEMP_DIR),
@@ -96,8 +96,7 @@ app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
     const result = await uploadCatbox(req.file.path);
     fs.unlink(req.file.path, () => {});
     if (result.success) {
-      const url = result.url.replace("files.catbox.moe", "zeanova.my.id");
-      res.json({ success: true, url });
+      res.json({ success: true, url: result.url });
     } else {
       res.status(500).json({ success: false, message: result.error });
     }
@@ -106,51 +105,17 @@ app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
   }
 });
 
-app.post("/api/ai/chat", async (req, res) => {
-  const { message, sessionId } = req.body;
-  if (!message)
-    return res
-      .status(400)
-      .json({ success: false, message: "Pesan wajib diisi" });
-  try {
-    const result = await chatWithPastebinAi(message, sessionId);
-    if (result) {
-      res.json({
-        success: true,
-        reply: result.reply,
-        sessionId: result.sessionId,
-      });
-    } else {
-      res
-        .status(500)
-        .json({ success: false, message: "Gagal mendapatkan balasan AI" });
-    }
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
-  }
-});
-
-app.get("/temp/:filename", (req, res) => {
+app.get("/zean/:filename", (req, res) => {
   const filePath = path.join(TEMP_DIR, req.params.filename);
   if (fs.existsSync(filePath)) {
     res.download(filePath, (err) => {
       if (err) console.error("Download error:", err);
-      fs.unlink(filePath, () => {});
     });
   } else {
     res.status(404).send("File tidak ditemukan");
   }
 });
 
-// ===== UNTUK VERCEL =====
-if (process.env.VERCEL) {
-  module.exports = app;
-} else {
-  const PORT = process.env.PORT || 3000;
-  app.listen(PORT, () => {
-    console.log(`🚀 Zeanova Library berjalan di http://localhost:${PORT}`);
-  });
-}
-
-// Ekspor untuk Vercel (jika tidak di dalam if, tetap ekspor)
-module.exports = app;
+app.listen(PORT, () => {
+  console.log(`🚀 Zeanova Library berjalan di http://localhost:${PORT}`);
+});

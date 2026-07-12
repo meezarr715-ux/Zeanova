@@ -131,6 +131,7 @@ async function downloadTiktok(url) {
       saves: itemStruct.statsV2?.collectCount || itemStruct.stats?.collectCount,
     };
 
+    // ===== IMAGE SLIDE =====
     if (isSlide) {
       const imagesList = itemStruct.imagePost.images.map(
         (img) => img.imageURL.urlList[0],
@@ -155,6 +156,7 @@ async function downloadTiktok(url) {
       return { status: true, result: finalResult };
     }
 
+    // ===== VIDEO =====
     const videoData = itemStruct.video;
     const watermarkUrl = videoData.downloadAddr || videoData.playAddr;
     let hdNoWatermarkUrl = null;

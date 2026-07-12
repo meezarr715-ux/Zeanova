@@ -1,7 +1,7 @@
 const { createWriteStream } = require("fs");
 const { pipeline } = require("stream/promises");
 const path = require("path");
-const fs = require("fs").promises;
+const fs = require("fs");
 
 const API_HOST = "epsilon.epsiloncloud.org";
 const FRONTEND = "https://convertytmp3.org";
@@ -93,7 +93,7 @@ async function downloadYoutube(url, format, tempDir) {
 
     await pipeline(dlResponse.body, createWriteStream(filePath));
 
-    const stats = await fs.stat(filePath);
+    const stats = await fs.promises.stat(filePath);
     const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
 
     const downloadUrl = `/temp/${encodeURIComponent(filename)}`;

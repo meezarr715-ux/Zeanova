@@ -6,7 +6,7 @@
     <title>Zeanova Library</title>
     <link
       rel="icon"
-      href="https://files.catbox.moe/ogv2ae.jpg"
+      href="https://files.catbox.moe/0p6az8.jpeg"
       type="image/jpeg"
     />
     <link
@@ -16,179 +16,263 @@
     <link rel="stylesheet" href="/style.css" />
   </head>
   <body>
-    <!-- HEADER -->
-    <header class="app-header">
-      <div class="brand">
-        <img
-          src="https://files.catbox.moe/ogv2ae.jpg"
-          alt="Zeanova Library"
-          class="brand-icon"
-        />
-        <div>
-          <h1>Zeanova Library</h1>
-          <span>Download &amp; Upload Media</span>
-        </div>
-      </div>
-      <nav class="nav-menu">
-        <a href="#" class="nav-link active" data-tab="home">Beranda</a>
-        <a href="#" class="nav-link" data-tab="download">Download</a>
-        <a href="#" class="nav-link" data-tab="upload">Upload Gambar</a>
-        <a href="#" class="nav-link" data-tab="ai">AI Chat</a>
-      </nav>
-    </header>
-
-    <!-- MAIN -->
-    <main class="main-content">
-      <!-- HOME -->
-      <section class="tab-pane active" id="tab-home">
-        <div class="hero">
-          <div class="hero-thumbnail">
+    <div class="app-wrapper">
+      <!-- ========== NAVBAR ========== -->
+      <nav class="navbar" id="navbar">
+        <div class="nav-container">
+          <div class="nav-brand">
             <img
-              src="https://files.catbox.moe/qv91yi.jpg"
-              alt="Zeanova Library Banner"
+              src="https://files.catbox.moe/0p6az8.jpeg"
+              alt="Logo"
+              class="brand-logo"
             />
+            <span>Zeanova Library</span>
           </div>
-          <div class="hero-text">
-            <h2>Selamat Datang di Zeanova Library</h2>
+          <ul class="nav-menu" id="navMenu">
+            <li class="nav-item active" data-page="home">
+              <i class="fas fa-home"></i> Beranda
+            </li>
+            <li class="nav-item" data-page="downloader">
+              <i class="fas fa-download"></i> Downloader
+            </li>
+            <li class="nav-item" data-page="convert">
+              <i class="fas fa-exchange-alt"></i> Convert
+            </li>
+            <li class="nav-item" data-page="bug">
+              <i class="fas fa-bug"></i> Laporan Bug
+            </li>
+          </ul>
+          <div class="nav-toggle" id="navToggle">
+            <i class="fas fa-bars"></i>
+          </div>
+        </div>
+      </nav>
+
+      <!-- ========== MAIN CONTENT ========== -->
+      <main class="main-content">
+        <!-- ===== BERANDA ===== -->
+        <section class="tab-content active" id="page-home">
+          <div class="dashboard-hero">
+            <div class="hero-badge">
+              <i class="fas fa-star"></i> Platform Lengkap
+            </div>
+            <h1>Selamat Datang di <span>Zeanova Library</span></h1>
             <p>
-              Download video dan musik dari YouTube, TikTok, Spotify, Instagram.
-              Upload gambar ke link dengan mudah.
+              Download media dari YouTube, TikTok, Spotify, Instagram, dan ubah
+              gambar menjadi link dengan mudah.
             </p>
+            <div class="hero-stats">
+              <div class="stat-card">
+                <i class="fas fa-video"></i><span class="stat-number">4</span
+                ><span class="stat-label">Platform</span>
+              </div>
+              <div class="stat-card">
+                <i class="fas fa-cloud-upload-alt"></i
+                ><span class="stat-number">∞</span
+                ><span class="stat-label">Upload</span>
+              </div>
+              <div class="stat-card">
+                <i class="fas fa-shield-alt"></i
+                ><span class="stat-number">100%</span
+                ><span class="stat-label">Gratis</span>
+              </div>
+            </div>
           </div>
-          <div class="feature-grid">
-            <div class="feature-item">
+
+          <div class="dashboard-features">
+            <div class="feature-card">
               <i class="fab fa-youtube"></i>
               <h3>YouTube</h3>
-              <p>MP3 / MP4</p>
+              <p>Unduh video/audio</p>
             </div>
-            <div class="feature-item">
+            <div class="feature-card">
               <i class="fab fa-tiktok"></i>
               <h3>TikTok</h3>
-              <p>Video & Musik</p>
+              <p>Video & audio tanpa watermark</p>
             </div>
-            <div class="feature-item">
+            <div class="feature-card">
               <i class="fab fa-spotify"></i>
               <h3>Spotify</h3>
-              <p>Single Track</p>
+              <p>Download lagu single</p>
             </div>
-            <div class="feature-item">
+            <div class="feature-card">
               <i class="fab fa-instagram"></i>
               <h3>Instagram</h3>
-              <p>Reels & Post</p>
+              <p>Reels, foto, dan video</p>
             </div>
-            <div class="feature-item">
-              <i class="fas fa-upload"></i>
-              <h3>Upload Gambar</h3>
-              <p>Ke Link (Catbox)</p>
+            <div class="feature-card">
+              <i class="fas fa-image"></i>
+              <h3>Convert</h3>
+              <p>Gambar ke link (Catbox)</p>
+            </div>
+            <div class="feature-card">
+              <i class="fas fa-bug"></i>
+              <h3>Laporan Bug</h3>
+              <p>Kirim masukan Anda</p>
             </div>
           </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- DOWNLOAD -->
-      <section class="tab-pane" id="tab-download">
-        <h2><i class="fas fa-download"></i> Download Media</h2>
-        <div class="download-container">
-          <!-- Platform Buttons -->
-          <div class="platform-buttons">
-            <button class="platform-btn active" data-platform="youtube">
+        <!-- ===== DOWNLOADER ===== -->
+        <section class="tab-content" id="page-downloader">
+          <h2 class="section-title">
+            <i class="fas fa-download"></i> Downloader
+          </h2>
+          <p class="section-desc">
+            Pilih platform, masukkan URL, dan klik download.
+          </p>
+
+          <!-- Platform tabs -->
+          <div class="downloader-tabs" id="dlTabs">
+            <button class="dl-tab active" data-platform="youtube">
               <i class="fab fa-youtube"></i> YouTube
             </button>
-            <button class="platform-btn" data-platform="tiktok">
+            <button class="dl-tab" data-platform="tiktok">
               <i class="fab fa-tiktok"></i> TikTok
             </button>
-            <button class="platform-btn" data-platform="spotify">
+            <button class="dl-tab" data-platform="spotify">
               <i class="fab fa-spotify"></i> Spotify
             </button>
-            <button class="platform-btn" data-platform="instagram">
+            <button class="dl-tab" data-platform="instagram">
               <i class="fab fa-instagram"></i> Instagram
             </button>
           </div>
 
-          <div class="download-box">
-            <div class="form-group">
-              <label id="platformLabel" for="dlUrl">Masukkan URL YouTube</label>
-              <div class="input-row">
-                <input
-                  type="text"
-                  id="dlUrl"
-                  placeholder="https://www.youtube.com/watch?v=..."
-                />
-                <button id="dlBtn" class="btn btn-primary">
-                  <i class="fas fa-arrow-down"></i> Download
+          <!-- Panel YouTube -->
+          <div class="dl-panel active" data-platform="youtube">
+            <div class="input-group">
+              <input
+                type="text"
+                id="ytUrl"
+                placeholder="https://www.youtube.com/watch?v=..."
+              />
+              <div class="format-group">
+                <button class="format-btn active" data-format="mp3">
+                  MP3 (Audio)
+                </button>
+                <button class="format-btn" data-format="mp4">
+                  MP4 (Video)
                 </button>
               </div>
+              <button class="btn-download" data-platform="youtube">
+                <i class="fas fa-arrow-down"></i> Download
+              </button>
             </div>
+            <div class="result-box" id="ytResult"></div>
+          </div>
 
-            <!-- FORMAT CHOICE (hanya untuk YouTube) -->
-            <div class="format-group" id="formatGroup">
-              <label>Pilih Format:</label>
-              <label class="format-option">
-                <input type="radio" name="format" value="mp3" checked />
-                <span>🎵 MP3 (Audio)</span>
-              </label>
-              <label class="format-option">
-                <input type="radio" name="format" value="mp4" />
-                <span>🎬 MP4 (Video)</span>
-              </label>
+          <!-- Panel TikTok -->
+          <div class="dl-panel" data-platform="tiktok">
+            <div class="input-group">
+              <input
+                type="text"
+                id="ttUrl"
+                placeholder="https://vt.tiktok.com/... atau https://www.tiktok.com/..."
+              />
+              <button class="btn-download" data-platform="tiktok">
+                <i class="fas fa-arrow-down"></i> Download
+              </button>
             </div>
+            <div class="result-box" id="ttResult"></div>
+          </div>
 
-            <div class="loader" id="dlLoader">
-              <div class="spinner"></div>
-              <span>Memproses...</span>
+          <!-- Panel Spotify -->
+          <div class="dl-panel" data-platform="spotify">
+            <div class="input-group">
+              <input
+                type="text"
+                id="spUrl"
+                placeholder="https://open.spotify.com/track/..."
+              />
+              <button class="btn-download" data-platform="spotify">
+                <i class="fas fa-arrow-down"></i> Download
+              </button>
             </div>
-            <div class="result" id="dlResult">
-              <h3>
-                <i class="fas fa-check-circle" style="color: #1a8a4a"></i> Hasil
-              </h3>
-              <div class="meta" id="dlMeta"></div>
-              <div class="actions" id="dlActions"></div>
+            <div class="result-box" id="spResult"></div>
+          </div>
+
+          <!-- Panel Instagram -->
+          <div class="dl-panel" data-platform="instagram">
+            <div class="input-group">
+              <input
+                type="text"
+                id="igUrl"
+                placeholder="https://www.instagram.com/reel/... atau /p/..."
+              />
+              <button class="btn-download" data-platform="instagram">
+                <i class="fas fa-arrow-down"></i> Download
+              </button>
+            </div>
+            <div class="result-box" id="igResult"></div>
+          </div>
+        </section>
+
+        <!-- ===== CONVERT ===== -->
+        <section class="tab-content" id="page-convert">
+          <h2 class="section-title">
+            <i class="fas fa-exchange-alt"></i> Convert Gambar ke Link
+          </h2>
+          <p class="section-desc">
+            Unggah gambar dan dapatkan link permanen dari Catbox.
+          </p>
+
+          <div class="convert-box">
+            <div class="upload-area" id="uploadArea">
+              <i class="fas fa-cloud-upload-alt"></i>
+              <h3>Drag & drop gambar di sini</h3>
+              <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
+              <input
+                type="file"
+                id="fileInput"
+                accept="image/*"
+                style="display: none"
+              />
+            </div>
+            <div class="progress-bar">
+              <div class="progress-fill" id="uploadProgress"></div>
             </div>
           </div>
-        </div>
-      </section>
 
-      <!-- UPLOAD -->
-      <section class="tab-pane" id="tab-upload">
-        <h2><i class="fas fa-upload"></i> Upload Gambar ke Link</h2>
-        <div class="upload-fullpage">
-          <div class="drop-zone" id="dropZone">
-            <i class="fas fa-cloud-upload-alt"></i>
-            <p>Drag &amp; drop gambar di sini, atau klik untuk pilih file</p>
-            <input
-              type="file"
-              id="fileInput"
-              accept="image/*"
-              style="display: none"
-            />
+          <!-- Daftar link (tanpa judul) -->
+          <div class="link-history">
+            <div class="link-list" id="linkHistory">
+              <div class="empty-msg">Belum ada link yang dihasilkan.</div>
+            </div>
           </div>
-          <div class="loader" id="uploadLoader">
-            <div class="spinner"></div>
-            <span>Mengupload...</span>
-          </div>
-          <div class="upload-history" id="uploadHistory">
-            <h4><i class="fas fa-history"></i> Riwayat Upload (maks. 5)</h4>
-            <ul id="historyList"></ul>
-          </div>
-        </div>
-      </section>
+        </section>
 
-      <!-- AI COMING SOON -->
-      <section class="tab-pane" id="tab-ai">
-        <div class="coming-soon">
-          <i class="fas fa-robot"></i>
-          <h2>Fitur AI Chat</h2>
-          <p>Sedang dalam pengembangan. Akan segera hadir!</p>
-          <div class="progress-bar">
-            <div class="progress-fill" style="width: 60%"></div>
+        <!-- ===== LAPORAN BUG ===== -->
+        <section class="tab-content" id="page-bug">
+          <div class="bug-box">
+            <i
+              class="fas fa-bug"
+              style="
+                font-size: 3rem;
+                color: var(--neon-cyan);
+                margin-bottom: 16px;
+              "
+            ></i>
+            <h2>Laporkan Masalah atau Saran</h2>
+            <p>
+              Jika Anda menemukan bug, atau memiliki ide untuk pengembangan
+              Zeanova Library, silakan isi formulir di bawah ini.
+            </p>
+            <a
+              href="https://forms.gle/DYCJ1arTXkaCDEoEA"
+              target="_blank"
+              class="btn-bug"
+              ><i class="fas fa-external-link-alt"></i> Buka Formulir</a
+            >
           </div>
-        </div>
-      </section>
-    </main>
+        </section>
+      </main>
 
-    <footer class="app-footer">
-      &copy; 2026 Zeanova Library. All rights reserved.
-    </footer>
+      <!-- ========== FOOTER ========== -->
+      <footer class="footer">
+        &copy; 2026 <strong>Zeanova Library</strong> — Dibuat dengan
+        <i class="fas fa-heart" style="color: #ff6b6b"></i> untuk semua
+      </footer>
+    </div>
 
     <script src="/script.js"></script>
   </body>

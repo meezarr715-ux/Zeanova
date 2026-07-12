@@ -14,7 +14,11 @@ async function downloadTrack(trackUrl) {
     );
     const trackId = res.data.jobId;
     if (!trackId)
-      return { success: false, error: "Failed to get job ID", url: trackUrl };
+      return {
+        success: false,
+        error: "Gagal mendapatkan job ID",
+        url: trackUrl,
+      };
     for (let i = 0; i < 20; i++) {
       await new Promise((r) => setTimeout(r, 3000));
       const statusRes = await axios.get(
@@ -35,21 +39,54 @@ async function downloadTrack(trackUrl) {
             download_url: downloadUrl,
             metadata: data.post
               ? {
-                  title: data.post.name,
-                  artist: data.post.artist,
-                  album: data.post.album,
-                  image: data.post.image,
+                  title: data.post.name || "Unknown",
+                  artist: data.post.artist || "Unknown",
+                  album: data.post.album || "Unknown",
+                  image: data.post.image || "",
                 }
               : null,
           };
         }
       } else if (data.status === "error" || data.status === "failed") {
-        return { success: false, error: "Conversion failed", url: trackUrl };
+        return {
+          success: false,
+          error: "Konversi gagal di server",
+          url: trackUrl,
+        };
       }
     }
-    return { success: false, error: "Timeout", url: trackUrl };
+    return {
+      success: false,
+      error: "Timeout menunggu konversi",
+      url: trackUrl,
+    };
   } catch (error) {
-    return { success: false, error: error.message, url: trackUrl };
+    try {
+      const fallbackRes = await axios.get(
+        `https://api.spotifydown.com/download/${trackUrl}`,
+        {
+          headers: { "User-Agent": "Mozilla/5.0" },
+        },
+      );
+      if (fallbackRes.data && fallbackRes.data.link) {
+        return {
+          success: true,
+          download_url: fallbackRes.data.link,
+          metadata: {
+            title: fallbackRes.data.title || "Unknown",
+            artist: fallbackRes.data.artist || "Unknown",
+            album: fallbackRes.data.album || "Unknown",
+          },
+        };
+      }
+    } catch (e) {
+      // Gagal juga, return error
+    }
+    return {
+      success: false,
+      error: error.message || "Gagal mengunduh Spotify",
+      url: trackUrl,
+    };
   }
 }
 

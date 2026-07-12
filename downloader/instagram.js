@@ -1,6 +1,6 @@
-const puppeteer = require("puppeteer-core");
-const chromium = require("@sparticuz/chromium");
-const path = require("path");
+const puppeteer = require("puppeteer-extra");
+const StealthPlugin = require("puppeteer-extra-plugin-stealth");
+puppeteer.use(StealthPlugin());
 
 function generateRandomIP() {
   const ranges = [
@@ -41,35 +41,18 @@ async function downloadInstagram(url) {
   if (!url || !/^(https?:\/\/)?(www\.)?instagram\.com\//i.test(url)) {
     return { success: false, error: "URL Instagram tidak valid" };
   }
-
   let browser;
   try {
-    // ===== Pastikan environment variable sudah diset di Vercel Dashboard =====
-    // AWS_LAMBDA_JS_RUNTIME = nodejs22.x
-    // =========================================================================
-
-    const executablePath = await chromium.executablePath();
-    const execDir = path.dirname(executablePath);
-    process.env.LD_LIBRARY_PATH = `${execDir}:${process.env.LD_LIBRARY_PATH || ""}`;
-
-    // Matikan graphics mode untuk mengurangi error
-    if (typeof chromium.setGraphicsMode === "function") {
-      chromium.setGraphicsMode(false);
-    }
-
     browser = await puppeteer.launch({
-      executablePath,
-      headless: chromium.headless,
+      headless: true,
+      protocolTimeout: 0,
       args: [
-        ...chromium.args,
         "--no-sandbox",
         "--disable-setuid-sandbox",
         "--disable-dev-shm-usage",
         "--disable-gpu",
       ],
-      protocolTimeout: 0,
     });
-
     const page = await browser.newPage();
     const spoofedIp = generateRandomIP();
     await page.setExtraHTTPHeaders({
@@ -88,7 +71,6 @@ async function downloadInstagram(url) {
       waitUntil: "domcontentloaded",
       timeout: 0,
     });
-
     await page.waitForFunction(
       () => {
         const title = document.title;
@@ -105,6 +87,7 @@ async function downloadInstagram(url) {
     await page.type("#s_input", url);
     await page.click(".btn-default");
 
+    // Tunggu hasil
     await page.waitForFunction(
       () => {
         const searchResult = document.querySelector("#search-result");
@@ -122,35 +105,62 @@ async function downloadInstagram(url) {
       const searchResult = document.querySelector("#search-result");
       const errorEl = searchResult.querySelector(".error");
       if (errorEl) return { error: errorEl.innerText.trim() };
-      const links = [];
+
+      // Kumpulkan semua link
+      const allLinks = [];
       searchResult.querySelectorAll("a").forEach((a) => {
         const href = a.getAttribute("href");
-        const text = a.innerText.trim();
+        const text = a.innerText.trim().toLowerCase();
         if (
           href &&
           href.startsWith("http") &&
           (href.includes("snapcdn") || href.includes("token="))
         ) {
-          links.push({ url: href, type: text || "Download" });
+          // Kategorikan berdasarkan teks atau tipe file
+          let type = "unknown";
+          if (
+            text.includes("video") ||
+            href.includes(".mp4") ||
+            href.includes("video")
+          ) {
+            type = "video";
+          } else if (
+            text.includes("photo") ||
+            text.includes("image") ||
+            href.includes(".jpg") ||
+            href.includes(".png")
+          ) {
+            type = "photo";
+          } else {
+            // Coba deteksi dari URL
+            if (href.includes("video")) type = "video";
+            else type = "photo";
+          }
+          allLinks.push({ url: href, type: type });
         }
       });
-      return { links };
+
+      // Pisahkan foto dan video
+      const photos = allLinks.filter((l) => l.type === "photo");
+      const videos = allLinks.filter((l) => l.type === "video");
+
+      return { photos, videos, total: allLinks.length };
     });
 
     await browser.close();
 
     if (result.error) return { success: false, error: result.error };
-    if (!result.links || result.links.length === 0) {
-      return { success: false, error: "Tidak ada link download ditemukan" };
-    }
-    return { success: true, downloadLinks: result.links };
+    if (result.total === 0)
+      return { success: false, error: "Tidak ada link ditemukan" };
+
+    return {
+      success: true,
+      photos: result.photos.map((p) => p.url),
+      videos: result.videos.map((v) => v.url),
+    };
   } catch (error) {
     if (browser) await browser.close().catch(() => {});
-    console.error("Instagram error details:", error);
-    return {
-      success: false,
-      error: error.message || "Gagal mengambil data Instagram",
-    };
+    return { success: false, error: error.message };
   }
 }
 
