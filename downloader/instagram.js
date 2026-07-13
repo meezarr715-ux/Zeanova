@@ -1,51 +1,18 @@
 const axios = require("axios");
 
 async function getDynamicApiKey() {
-  const htmlRes = await axios.get("https://instaddl.com/", { timeout: 30000 });
+  const htmlRes = await axios.get("https://instaddl.com/");
   const scriptMatch = htmlRes.data.match(
     /src="([^"]*assets\/index-[^"]*\.js)"/,
   );
   if (!scriptMatch) throw new Error("Failed to find script URL");
   const jsUrl = "https://instaddl.com" + scriptMatch[1];
-  const jsRes = await axios.get(jsUrl, { timeout: 30000 });
+  const jsRes = await axios.get(jsUrl);
   const keyMatch = jsRes.data.match(
     /(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[^"'\s]+)/,
   );
   if (!keyMatch) throw new Error("Failed to extract API key");
   return keyMatch[1];
-}
-
-function extractLinks(data) {
-  let links = [];
-  if (Array.isArray(data)) {
-    links = data.map((item) => ({
-      url: item.url || item,
-      type:
-        item.type ||
-        (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
-    }));
-  } else if (typeof data === "object" && data !== null) {
-    if (data.images) {
-      data.images.forEach((img) => links.push({ url: img, type: "photo" }));
-    }
-    if (data.videos) {
-      data.videos.forEach((vid) => links.push({ url: vid, type: "video" }));
-    }
-    if (data.url) {
-      links.push({ url: data.url, type: data.type || "photo" });
-    }
-    // Coba cari semua properti yang nilainya URL
-    for (const key of Object.keys(data)) {
-      if (typeof data[key] === "string" && data[key].startsWith("http")) {
-        if (data[key].includes(".mp4")) {
-          links.push({ url: data[key], type: "video" });
-        } else {
-          links.push({ url: data[key], type: "photo" });
-        }
-      }
-    }
-  }
-  return links;
 }
 
 async function downloadInstagram(url) {
@@ -67,21 +34,15 @@ async function downloadInstagram(url) {
           apikey: apiKey,
           authorization: authorization,
         },
-        timeout: 60000,
+        timeout: 30000,
       },
     );
 
-    // Jika langsung dapat data, return
-    if (create.success && create.data) {
-      const links = extractLinks(create.data);
-      if (links.length > 0) {
-        return { success: true, data: links };
-      }
-    }
+    if (!create.success) throw new Error("Gagal memulai fetch");
 
-    // Polling lebih lama (60 detik)
-    for (let i = 0; i < 30; i++) {
-      await new Promise((resolve) => setTimeout(resolve, 2000));
+    // Polling dengan interval 1.5 detik, max 20 kali (30 detik)
+    for (let i = 0; i < 20; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 1500));
       try {
         const { data: result } = await axios.post(
           "https://eoehwyffvhpmvpeblkbi.supabase.co/functions/v1/instagram-poll",
@@ -102,25 +63,70 @@ async function downloadInstagram(url) {
         );
 
         if (result.data && !result.pending) {
-          const links = extractLinks(result.data);
+          let links = [];
+          // Jika result.data adalah array dengan objek { url, type }
+          if (Array.isArray(result.data)) {
+            links = result.data.map((item) => ({
+              url: item.url || item,
+              type:
+                item.type ||
+                (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
+            }));
+          } else if (typeof result.data === "object") {
+            // Cek berbagai format
+            if (result.data.images) {
+              if (Array.isArray(result.data.images)) {
+                result.data.images.forEach((img) =>
+                  links.push({ url: img, type: "photo" }),
+                );
+              } else {
+                // Jika images adalah object dengan key
+                Object.values(result.data.images).forEach((img) => {
+                  if (img) links.push({ url: img, type: "photo" });
+                });
+              }
+            }
+            if (result.data.videos) {
+              if (Array.isArray(result.data.videos)) {
+                result.data.videos.forEach((vid) =>
+                  links.push({ url: vid, type: "video" }),
+                );
+              } else {
+                Object.values(result.data.videos).forEach((vid) => {
+                  if (vid) links.push({ url: vid, type: "video" });
+                });
+              }
+            }
+            if (result.data.url) {
+              links.push({
+                url: result.data.url,
+                type: result.data.type || "photo",
+              });
+            }
+          }
           if (links.length > 0) {
             return { success: true, data: links };
           }
         }
       } catch (pollErr) {
-        // Lanjut polling
+        console.log("Polling error, retry...", pollErr.message);
       }
     }
 
-    // Fallback: coba ambil dari response pertama
-    if (create.data) {
-      const links = extractLinks(create.data);
+    // Fallback: coba ambil dari response pertama jika ada data
+    if (create.data && create.data.length > 0) {
+      const links = create.data.map((item) => ({
+        url: item.url || item,
+        type:
+          item.type ||
+          (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
+      }));
       if (links.length > 0) {
         return { success: true, data: links };
       }
     }
 
-    throw new Error("Tidak ada link ditemukan atau timeout");
+    throw new Error("Timeout menunggu hasil atau tidak ada link ditemukan");
   } catch (err) {
     return { success: false, error: err.message };
   }

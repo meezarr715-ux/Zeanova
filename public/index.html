@@ -17,7 +17,6 @@
   </head>
   <body>
     <div class="app-wrapper">
-      <!-- ========== NAVBAR ========== -->
       <nav class="navbar" id="navbar">
         <div class="nav-container">
           <div class="nav-brand">
@@ -48,9 +47,8 @@
         </div>
       </nav>
 
-      <!-- ========== MAIN CONTENT ========== -->
       <main class="main-content">
-        <!-- ===== BERANDA ===== -->
+        <!-- Home -->
         <section class="tab-content active" id="page-home">
           <div class="dashboard-hero">
             <div class="hero-badge">
@@ -78,7 +76,6 @@
               </div>
             </div>
           </div>
-
           <div class="dashboard-features">
             <div class="feature-card">
               <i class="fab fa-youtube"></i>
@@ -113,7 +110,7 @@
           </div>
         </section>
 
-        <!-- ===== DOWNLOADER ===== -->
+        <!-- Downloader -->
         <section class="tab-content" id="page-downloader">
           <h2 class="section-title">
             <i class="fas fa-download"></i> Downloader
@@ -121,8 +118,6 @@
           <p class="section-desc">
             Pilih platform, masukkan URL, dan klik download.
           </p>
-
-          <!-- Platform tabs -->
           <div class="downloader-tabs" id="dlTabs">
             <button class="dl-tab active" data-platform="youtube">
               <i class="fab fa-youtube"></i> YouTube
@@ -138,7 +133,7 @@
             </button>
           </div>
 
-          <!-- Panel YouTube -->
+          <!-- YouTube -->
           <div class="dl-panel active" data-platform="youtube">
             <div class="format-selector">
               <label
@@ -154,7 +149,7 @@
               <input
                 type="text"
                 id="ytUrl"
-                placeholder="https://www.youtube.com/"
+                placeholder="https://www.youtube.com/watch?v=..."
               />
               <button class="btn-download" data-platform="youtube">
                 <i class="fas fa-arrow-down"></i> Download
@@ -163,13 +158,13 @@
             <div class="result-box" id="ytResult"></div>
           </div>
 
-          <!-- Panel TikTok -->
+          <!-- TikTok -->
           <div class="dl-panel" data-platform="tiktok">
             <div class="input-group">
               <input
                 type="text"
                 id="ttUrl"
-                placeholder="https://vt.tiktok.com/"
+                placeholder="https://vt.tiktok.com/... atau https://www.tiktok.com/..."
               />
               <button class="btn-download" data-platform="tiktok">
                 <i class="fas fa-arrow-down"></i> Download
@@ -178,13 +173,13 @@
             <div class="result-box" id="ttResult"></div>
           </div>
 
-          <!-- Panel Spotify -->
+          <!-- Spotify -->
           <div class="dl-panel" data-platform="spotify">
             <div class="input-group">
               <input
                 type="text"
                 id="spUrl"
-                placeholder="https://open.spotify.com/."
+                placeholder="https://open.spotify.com/track/..."
               />
               <button class="btn-download" data-platform="spotify">
                 <i class="fas fa-arrow-down"></i> Download
@@ -193,13 +188,13 @@
             <div class="result-box" id="spResult"></div>
           </div>
 
-          <!-- Panel Instagram -->
+          <!-- Instagram -->
           <div class="dl-panel" data-platform="instagram">
             <div class="input-group">
               <input
                 type="text"
                 id="igUrl"
-                placeholder="https://www.instagram.com/"
+                placeholder="https://www.instagram.com/reel/... atau /p/..."
               />
               <button class="btn-download" data-platform="instagram">
                 <i class="fas fa-arrow-down"></i> Download
@@ -209,27 +204,24 @@
           </div>
         </section>
 
-        <!-- ===== CONVERT ===== -->
+        <!-- Convert -->
         <section class="tab-content" id="page-convert">
           <h2 class="section-title">
             <i class="fas fa-exchange-alt"></i> Convert File to Link
           </h2>
           <p class="section-desc">
-            Unggah media/file disini untuk di convert menjadi link.
+            Unggah file/media untuk mengunggahnya menjadi link yang dapat
+            dibagikan.
           </p>
-
           <div class="convert-box">
             <div class="upload-area" id="uploadArea">
               <i class="fas fa-cloud-upload-alt"></i>
               <h3>Drag & drop file di sini</h3>
-              <p>
-                atau klik untuk memilih file (maksimal 10 file, JPG, PNG, GIF,
-                dll.)
-              </p>
+              <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
               <input
                 type="file"
                 id="fileInput"
-                accept="image/*"
+                accept="*/*"
                 multiple
                 style="display: none"
               />
@@ -238,7 +230,6 @@
               <div class="progress-fill" id="uploadProgress"></div>
             </div>
           </div>
-
           <div class="link-history">
             <div class="link-list" id="linkHistory">
               <div class="empty-msg">Belum ada link yang dihasilkan.</div>
@@ -246,7 +237,7 @@
           </div>
         </section>
 
-        <!-- ===== LAPORAN BUG ===== -->
+        <!-- Bug -->
         <section class="tab-content" id="page-bug">
           <div class="bug-box">
             <i
@@ -272,11 +263,8 @@
         </section>
       </main>
 
-      <!-- ========== FOOTER ========== -->
       <footer class="footer">
-        &copy; 2026 <strong>Zeanova Library</strong> — All rights reserved. |
-        Developed by
-        <a href="https://github.com/zeanova" target="_blank">Zeanova Dev</a>
+        &copy; 2026 <strong>Zeanova Library</strong> — All rights reserved.
       </footer>
     </div>
 

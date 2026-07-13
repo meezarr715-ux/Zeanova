@@ -33,7 +33,7 @@
         <i class="fas fa-cloud-upload-alt"></i>
         <h3>Drag & drop gambar di sini</h3>
         <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
-        <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
       `;
       initConvert();
     }
@@ -133,15 +133,24 @@
           const match = contentDisposition.match(/filename="(.+)"/);
           if (match) filename = match[1];
         }
-        showResult(
-          ytResult,
-          `
-        <div class="success"><i class="fas fa-check-circle"></i> Siap diunduh</div>
-        <div style="margin-top:12px;">
-          <a href="${downloadUrl}" class="btn-download" download="${filename}"><i class="fas fa-download"></i> Unduh ${format.toUpperCase()}</a>
-        </div>
-      `,
+
+        // Tampilkan thumbnail dari YouTube (gunakan embed)
+        const videoId = url.match(
+          /(?:youtu\.be\/|youtube\.com\/(?:embed\/|live\/|shorts\/)|[?&]v=)([a-zA-Z0-9-_]{11})/,
         );
+        const thumbnail = videoId
+          ? `https://img.youtube.com/vi/${videoId[1]}/hqdefault.jpg`
+          : "";
+
+        let html = `<div class="success"><i class="fas fa-check-circle"></i> Siap diunduh</div>`;
+        if (thumbnail) {
+          html += `<div style="margin:12px 0;"><img src="${thumbnail}" alt="Thumbnail" style="max-width:100%; max-height:200px; border-radius:8px; border:1px solid var(--border-glow);" /></div>`;
+        }
+        html += `<div style="margin-top:8px;"><strong>Judul:</strong> ${escapeHtml(filename.replace(/\.[^.]+$/, ""))}</div>`;
+        html += `<div style="margin-top:12px;">
+        <a href="${downloadUrl}" class="btn-download" download="${filename}"><i class="fas fa-download"></i> Unduh ${format.toUpperCase()}</a>
+      </div>`;
+        showResult(ytResult, html);
         ytUrl.value = "";
       } catch (err) {
         showResult(
@@ -152,6 +161,9 @@
     });
 
   // ========== TIKTOK ==========
+  const ttUrl = document.getElementById("ttUrl");
+  const ttResult = document.getElementById("ttResult");
+
   document
     .querySelector('.btn-download[data-platform="tiktok"]')
     .addEventListener("click", async () => {
@@ -174,17 +186,31 @@
         const author = r.author || {};
 
         let html = `<div class="success"><i class="fas fa-check-circle"></i> Berhasil</div>`;
+
+        // Tampilkan media preview (cover/slides)
+        if (isImage && r.slides && r.slides.length > 0) {
+          html += `<div style="margin:12px 0; display:flex; flex-wrap:wrap; gap:8px; max-height:200px; overflow-y:auto;">`;
+          r.slides.slice(0, 4).forEach((img) => {
+            html += `<img src="${img}" style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid var(--border-glow);" />`;
+          });
+          if (r.slides.length > 4) {
+            html += `<div style="display:flex; align-items:center; color:var(--text-secondary);">+${r.slides.length - 4} lagi</div>`;
+          }
+          html += `</div>`;
+        } else if (r.cover) {
+          html += `<div style="margin:12px 0;"><img src="${r.cover}" alt="Cover" style="max-width:100%; max-height:200px; border-radius:8px; border:1px solid var(--border-glow);" /></div>`;
+        }
+
         html += `<div><strong>Deskripsi:</strong> ${escapeHtml(r.title || "—")}</div>`;
         html += `<div><strong>Author:</strong> ${escapeHtml(author.nickname || author.username || "—")}</div>`;
         html += `<div><strong>Like:</strong> ${formatNumber(stats.likes)}</div>`;
         html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
 
-        if (isImage && r.slides) {
-          const slides = r.slides;
-          if (Array.isArray(slides) && slides.length > 0) {
-            html += `<button class="btn-download" id="ttDownloadSlides"><i class="fas fa-images"></i> Download Semua Foto (${slides.length})</button>`;
+        if (isImage && r.slides && r.slides.length > 0) {
+          html += `<button class="btn-download" id="ttDownloadSlides"><i class="fas fa-images"></i> Download Semua Foto (${r.slides.length})</button>`;
+          if (r.music) {
+            html += `<a href="${r.music}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
           }
-          // HILANGKAN tombol audio untuk slide gambar
         } else {
           if (download.no_watermark_hd) {
             html += `<a href="${download.no_watermark_hd}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
@@ -245,7 +271,14 @@
         });
         const data = await resp.json();
         if (!resp.ok || !data.success) throw new Error(data.error || "Gagal");
+
         let html = `<div class="success"><i class="fas fa-check-circle"></i> Siap diunduh</div>`;
+
+        // Tampilkan gambar album
+        if (data.metadata && data.metadata.image) {
+          html += `<div style="margin:12px 0;"><img src="${data.metadata.image}" alt="Album" style="max-width:200px; max-height:200px; border-radius:8px; border:1px solid var(--border-glow);" /></div>`;
+        }
+
         if (data.metadata) {
           html += `<div><strong>Judul:</strong> ${escapeHtml(data.metadata.title)}</div>`;
           html += `<div><strong>Artis:</strong> ${escapeHtml(data.metadata.artist)}</div>`;
@@ -262,7 +295,10 @@
       }
     });
 
-  // ========== INSTAGRAM (fallback jika polling gagal) ==========
+  // ========== INSTAGRAM ==========
+  const igUrl = document.getElementById("igUrl");
+  const igResult = document.getElementById("igResult");
+
   document
     .querySelector('.btn-download[data-platform="instagram"]')
     .addEventListener("click", async () => {
@@ -293,6 +329,24 @@
         );
 
         let html = `<div class="success"><i class="fas fa-check-circle"></i> ${links.length} link ditemukan</div>`;
+
+        // Tampilkan preview media (max 4 foto/video thumbnail)
+        html += `<div style="margin:12px 0; display:flex; flex-wrap:wrap; gap:8px; max-height:200px; overflow-y:auto;">`;
+        const previewItems = links.slice(0, 4);
+        previewItems.forEach((item) => {
+          const url = typeof item === "string" ? item : item.url;
+          const isVideo = url.includes(".mp4") || item.type === "video";
+          if (isVideo) {
+            html += `<video src="${url}" style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid var(--border-glow);" muted></video>`;
+          } else {
+            html += `<img src="${url}" style="width:100px; height:100px; object-fit:cover; border-radius:8px; border:1px solid var(--border-glow);" />`;
+          }
+        });
+        if (links.length > 4) {
+          html += `<div style="display:flex; align-items:center; color:var(--text-secondary);">+${links.length - 4} lagi</div>`;
+        }
+        html += `</div>`;
+
         html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
         if (photoLinks.length > 0) {
           html += `<button class="btn-download" id="igDownloadPhotos"><i class="fas fa-images"></i> Download Foto (${photoLinks.length})</button>`;
@@ -342,7 +396,7 @@
       }
     });
 
-  // ========== CONVERT (MULTI-FILE) ==========
+  // ========== CONVERT (OTOMATIS + MULTIPLE FILE) ==========
   let selectedFiles = [];
   let isUploading = false;
 
@@ -381,26 +435,26 @@
         const url = item.querySelector(".link-url")?.getAttribute("href") || "";
         if (url) links.push({ filename, url });
       });
-      const data = { timestamp: Date.now(), links: links.slice(0, 20) };
+      const data = { timestamp: Date.now(), links: links.slice(0, 10) };
       sessionStorage.setItem("zeanova_links", JSON.stringify(data));
     }
 
     function addLinkToHistory(filename, url, save = true) {
       const emptyMsg = linkHistory.querySelector(".empty-msg");
       if (emptyMsg) emptyMsg.remove();
-      while (linkHistory.children.length >= 20) {
+      while (linkHistory.children.length >= 10) {
         linkHistory.removeChild(linkHistory.lastChild);
       }
       const item = document.createElement("div");
       item.className = "link-item";
       item.innerHTML = `
-      <div class="link-info">
-        <i class="fas fa-link"></i>
-        <span class="filename">${escapeHtml(filename)}</span>
-      </div>
-      <a href="${url}" class="link-url" target="_blank">${url}</a>
-      <button class="copy-btn" onclick="navigator.clipboard.writeText('${url}')"><i class="fas fa-copy"></i> Salin</button>
-    `;
+        <div class="link-info">
+          <i class="fas fa-link"></i>
+          <span class="filename">${escapeHtml(filename)}</span>
+        </div>
+        <a href="${url}" class="link-url" target="_blank">${url}</a>
+        <button class="copy-btn" onclick="navigator.clipboard.writeText('${url}')"><i class="fas fa-copy"></i> Salin</button>
+      `;
       linkHistory.prepend(item);
       if (save) saveHistory();
     }
@@ -409,23 +463,22 @@
       selectedFiles = [];
       if (newFileInput) newFileInput.value = "";
       newUploadArea.innerHTML = `
-      <i class="fas fa-cloud-upload-alt"></i>
-      <h3>Drag & drop gambar di sini</h3>
-      <p>atau klik untuk memilih file (maksimal 10 file, JPG, PNG, GIF, dll.)</p>
-      <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
-    `;
+        <i class="fas fa-cloud-upload-alt"></i>
+        <h3>Drag & drop gambar di sini</h3>
+        <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
+        <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
+      `;
+      // Re-attach events
       initConvert();
     }
 
-    async function autoUpload(files) {
-      if (isUploading || files.length === 0) return;
+    async function autoUpload(file) {
+      if (isUploading) return;
       isUploading = true;
       uploadProgress.style.width = "0%";
 
       const formData = new FormData();
-      for (const file of files) {
-        formData.append("files", file);
-      }
+      formData.append("file", file);
 
       try {
         const xhr = new XMLHttpRequest();
@@ -441,39 +494,46 @@
             try {
               const data = JSON.parse(xhr.responseText);
               if (data.success) {
-                data.results.forEach((result) => {
-                  if (result.success) {
-                    addLinkToHistory(result.filename, result.url);
-                  } else {
-                    alert(
-                      "Gagal upload: " + result.filename + " - " + result.error,
-                    );
-                  }
-                });
-                resetUploadArea();
-                uploadProgress.style.width = "0%";
+                addLinkToHistory(file.name, data.url);
+                uploadProgress.style.width = "100%";
+                // Proses file berikutnya
+                processNextFile();
               } else {
                 alert("Upload gagal: " + (data.message || "Unknown error"));
+                processNextFile();
               }
             } catch (e) {
               alert("Respon server tidak valid");
+              processNextFile();
             }
           } else {
             alert("Server error: " + xhr.status);
+            processNextFile();
           }
-          isUploading = false;
         };
         xhr.onerror = () => {
           alert("Gagal terhubung ke server.");
-          isUploading = false;
+          processNextFile();
         };
         xhr.send(formData);
       } catch (err) {
         alert("Error: " + err.message);
-        isUploading = false;
+        processNextFile();
       }
     }
 
+    function processNextFile() {
+      if (selectedFiles.length > 0) {
+        const nextFile = selectedFiles.shift();
+        autoUpload(nextFile);
+      } else {
+        isUploading = false;
+        resetUploadArea();
+        uploadProgress.style.width = "0%";
+      }
+    }
+
+    // Event listeners
     newUploadArea.addEventListener("click", (e) => {
       if (e.target.closest("button") || e.target.closest("a")) return;
       const inp = document.getElementById("fileInput");
@@ -483,15 +543,19 @@
     if (newFileInput) {
       newFileInput.addEventListener("change", (e) => {
         if (e.target.files.length) {
-          const files = Array.from(e.target.files).slice(0, 10);
+          const files = Array.from(e.target.files);
           selectedFiles = files;
-          let html = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${files.length} file dipilih</h3><p>`;
-          files.forEach((f) => {
-            html += f.name + " (" + (f.size / 1024).toFixed(0) + " KB)<br>";
-          });
-          html += "</p>";
-          newUploadArea.innerHTML = html;
-          autoUpload(files);
+
+          // Tampilkan nama file di area
+          let fileNames = files.map((f) => f.name).join(", ");
+          if (fileNames.length > 50)
+            fileNames = fileNames.substring(0, 50) + "...";
+          newUploadArea.innerHTML = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${files.length} file dipilih</h3><p>${escapeHtml(fileNames)}</p>`;
+
+          // Mulai upload otomatis
+          if (!isUploading) {
+            processNextFile();
+          }
         }
       });
     }
@@ -507,15 +571,16 @@
       e.preventDefault();
       newUploadArea.classList.remove("dragover");
       if (e.dataTransfer.files.length) {
-        const files = Array.from(e.dataTransfer.files).slice(0, 10);
+        const files = Array.from(e.dataTransfer.files);
         selectedFiles = files;
-        let html = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${files.length} file dipilih</h3><p>`;
-        files.forEach((f) => {
-          html += f.name + " (" + (f.size / 1024).toFixed(0) + " KB)<br>";
-        });
-        html += "</p>";
-        newUploadArea.innerHTML = html;
-        autoUpload(files);
+        let fileNames = files.map((f) => f.name).join(", ");
+        if (fileNames.length > 50)
+          fileNames = fileNames.substring(0, 50) + "...";
+        newUploadArea.innerHTML = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${files.length} file dipilih</h3><p>${escapeHtml(fileNames)}</p>`;
+
+        if (!isUploading) {
+          processNextFile();
+        }
       }
     });
 
