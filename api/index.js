@@ -23,7 +23,7 @@ const storage = multer.diskStorage({
   destination: (req, file, cb) => cb(null, TEMP_DIR),
   filename: (req, file, cb) => cb(null, Date.now() + "-" + file.originalname),
 });
-const upload = multer({ storage });
+const upload = multer({ storage, limits: { files: 10 } }); // Maksimal 10 file
 
 // ========== ENDPOINTS ==========
 app.post("/api/download/youtube", async (req, res) => {
@@ -100,22 +100,35 @@ app.post("/api/download/instagram", async (req, res) => {
   }
 });
 
-app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
-  if (!req.file)
+// ===== MULTI-FILE UPLOAD =====
+app.post("/api/upload/catbox", upload.array("files", 10), async (req, res) => {
+  if (!req.files || req.files.length === 0) {
     return res
       .status(400)
-      .json({ success: false, message: "File tidak ditemukan" });
-  try {
-    const result = await uploadCatbox(req.file.path);
-    fs.unlink(req.file.path, () => {});
-    if (result.success) {
-      res.json({ success: true, url: result.url });
-    } else {
-      res.status(500).json({ success: false, message: result.error });
-    }
-  } catch (err) {
-    res.status(500).json({ success: false, message: err.message });
+      .json({ success: false, message: "Tidak ada file yang diupload" });
   }
+
+  const results = [];
+  for (const file of req.files) {
+    const result = await uploadCatbox(file.path);
+    // Hapus file temp
+    fs.unlink(file.path, () => {});
+    results.push({
+      filename: file.originalname,
+      success: result.success,
+      url: result.url || null,
+      error: result.error || null,
+    });
+  }
+
+  const allSuccess = results.every((r) => r.success);
+  res.json({
+    success: allSuccess,
+    results: results,
+    message: allSuccess
+      ? "Semua file berhasil diupload"
+      : "Beberapa file gagal diupload",
+  });
 });
 
 // ===== Development only =====

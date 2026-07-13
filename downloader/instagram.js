@@ -1,18 +1,51 @@
 const axios = require("axios");
 
 async function getDynamicApiKey() {
-  const htmlRes = await axios.get("https://instaddl.com/");
+  const htmlRes = await axios.get("https://instaddl.com/", { timeout: 30000 });
   const scriptMatch = htmlRes.data.match(
     /src="([^"]*assets\/index-[^"]*\.js)"/,
   );
   if (!scriptMatch) throw new Error("Failed to find script URL");
   const jsUrl = "https://instaddl.com" + scriptMatch[1];
-  const jsRes = await axios.get(jsUrl);
+  const jsRes = await axios.get(jsUrl, { timeout: 30000 });
   const keyMatch = jsRes.data.match(
     /(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[^"'\s]+)/,
   );
   if (!keyMatch) throw new Error("Failed to extract API key");
   return keyMatch[1];
+}
+
+function extractLinks(data) {
+  let links = [];
+  if (Array.isArray(data)) {
+    links = data.map((item) => ({
+      url: item.url || item,
+      type:
+        item.type ||
+        (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
+    }));
+  } else if (typeof data === "object" && data !== null) {
+    if (data.images) {
+      data.images.forEach((img) => links.push({ url: img, type: "photo" }));
+    }
+    if (data.videos) {
+      data.videos.forEach((vid) => links.push({ url: vid, type: "video" }));
+    }
+    if (data.url) {
+      links.push({ url: data.url, type: data.type || "photo" });
+    }
+    // Coba cari semua properti yang nilainya URL
+    for (const key of Object.keys(data)) {
+      if (typeof data[key] === "string" && data[key].startsWith("http")) {
+        if (data[key].includes(".mp4")) {
+          links.push({ url: data[key], type: "video" });
+        } else {
+          links.push({ url: data[key], type: "photo" });
+        }
+      }
+    }
+  }
+  return links;
 }
 
 async function downloadInstagram(url) {
@@ -34,14 +67,20 @@ async function downloadInstagram(url) {
           apikey: apiKey,
           authorization: authorization,
         },
-        timeout: 30000,
+        timeout: 60000,
       },
     );
 
-    if (!create.success) throw new Error("Gagal memulai fetch");
+    // Jika langsung dapat data, return
+    if (create.success && create.data) {
+      const links = extractLinks(create.data);
+      if (links.length > 0) {
+        return { success: true, data: links };
+      }
+    }
 
-    // Polling lebih lama (30 detik)
-    for (let i = 0; i < 15; i++) {
+    // Polling lebih lama (60 detik)
+    for (let i = 0; i < 30; i++) {
       await new Promise((resolve) => setTimeout(resolve, 2000));
       try {
         const { data: result } = await axios.post(
@@ -63,54 +102,25 @@ async function downloadInstagram(url) {
         );
 
         if (result.data && !result.pending) {
-          let links = [];
-          if (Array.isArray(result.data)) {
-            links = result.data.map((item) => ({
-              url: item.url || item,
-              type:
-                item.type ||
-                (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
-            }));
-          } else if (typeof result.data === "object") {
-            if (result.data.images) {
-              result.data.images.forEach((img) =>
-                links.push({ url: img, type: "photo" }),
-              );
-            }
-            if (result.data.videos) {
-              result.data.videos.forEach((vid) =>
-                links.push({ url: vid, type: "video" }),
-              );
-            }
-            if (result.data.url) {
-              links.push({
-                url: result.data.url,
-                type: result.data.type || "photo",
-              });
-            }
-          }
+          const links = extractLinks(result.data);
           if (links.length > 0) {
             return { success: true, data: links };
           }
         }
       } catch (pollErr) {
-        console.log("Polling error, retry...", pollErr.message);
         // Lanjut polling
       }
     }
 
-    // Fallback: coba ambil dari response pertama jika ada data
-    if (create.data && create.data.length > 0) {
-      const links = create.data.map((item) => ({
-        url: item.url || item,
-        type:
-          item.type ||
-          (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
-      }));
-      return { success: true, data: links };
+    // Fallback: coba ambil dari response pertama
+    if (create.data) {
+      const links = extractLinks(create.data);
+      if (links.length > 0) {
+        return { success: true, data: links };
+      }
     }
 
-    throw new Error("Timeout menunggu hasil atau tidak ada link ditemukan");
+    throw new Error("Tidak ada link ditemukan atau timeout");
   } catch (err) {
     return { success: false, error: err.message };
   }

@@ -151,7 +151,7 @@
       }
     });
 
-  // ========== TIKTOK (Slide gambar - hilangkan tombol audio jika tidak ada) ==========
+  // ========== TIKTOK ==========
   document
     .querySelector('.btn-download[data-platform="tiktok"]')
     .addEventListener("click", async () => {
@@ -184,10 +184,7 @@
           if (Array.isArray(slides) && slides.length > 0) {
             html += `<button class="btn-download" id="ttDownloadSlides"><i class="fas fa-images"></i> Download Semua Foto (${slides.length})</button>`;
           }
-          // Hanya tampilkan audio jika ada music_link
-          if (r.music) {
-            html += `<a href="${r.music}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
-          }
+          // HILANGKAN tombol audio untuk slide gambar
         } else {
           if (download.no_watermark_hd) {
             html += `<a href="${download.no_watermark_hd}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
@@ -345,8 +342,8 @@
       }
     });
 
-  // ========== CONVERT (OTOMATIS) ==========
-  let selectedFile = null;
+  // ========== CONVERT (MULTI-FILE) ==========
+  let selectedFiles = [];
   let isUploading = false;
 
   function initConvert() {
@@ -355,7 +352,6 @@
     const uploadProgress = document.getElementById("uploadProgress");
     const linkHistory = document.getElementById("linkHistory");
 
-    // Clone untuk hapus event lama
     const newUploadArea = uploadArea.cloneNode(true);
     uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
     const newFileInput = document.getElementById("fileInput");
@@ -385,14 +381,14 @@
         const url = item.querySelector(".link-url")?.getAttribute("href") || "";
         if (url) links.push({ filename, url });
       });
-      const data = { timestamp: Date.now(), links: links.slice(0, 10) };
+      const data = { timestamp: Date.now(), links: links.slice(0, 20) };
       sessionStorage.setItem("zeanova_links", JSON.stringify(data));
     }
 
     function addLinkToHistory(filename, url, save = true) {
       const emptyMsg = linkHistory.querySelector(".empty-msg");
       if (emptyMsg) emptyMsg.remove();
-      while (linkHistory.children.length >= 10) {
+      while (linkHistory.children.length >= 20) {
         linkHistory.removeChild(linkHistory.lastChild);
       }
       const item = document.createElement("div");
@@ -410,25 +406,26 @@
     }
 
     function resetUploadArea() {
-      selectedFile = null;
+      selectedFiles = [];
       if (newFileInput) newFileInput.value = "";
       newUploadArea.innerHTML = `
       <i class="fas fa-cloud-upload-alt"></i>
       <h3>Drag & drop gambar di sini</h3>
-      <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
-      <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+      <p>atau klik untuk memilih file (maksimal 10 file, JPG, PNG, GIF, dll.)</p>
+      <input type="file" id="fileInput" accept="image/*" multiple style="display:none;" />
     `;
-      // Re-attach events
       initConvert();
     }
 
-    async function autoUpload(file) {
-      if (isUploading) return;
+    async function autoUpload(files) {
+      if (isUploading || files.length === 0) return;
       isUploading = true;
       uploadProgress.style.width = "0%";
 
       const formData = new FormData();
-      formData.append("file", file);
+      for (const file of files) {
+        formData.append("files", file);
+      }
 
       try {
         const xhr = new XMLHttpRequest();
@@ -444,7 +441,15 @@
             try {
               const data = JSON.parse(xhr.responseText);
               if (data.success) {
-                addLinkToHistory(file.name, data.url);
+                data.results.forEach((result) => {
+                  if (result.success) {
+                    addLinkToHistory(result.filename, result.url);
+                  } else {
+                    alert(
+                      "Gagal upload: " + result.filename + " - " + result.error,
+                    );
+                  }
+                });
                 resetUploadArea();
                 uploadProgress.style.width = "0%";
               } else {
@@ -469,7 +474,6 @@
       }
     }
 
-    // Event listeners
     newUploadArea.addEventListener("click", (e) => {
       if (e.target.closest("button") || e.target.closest("a")) return;
       const inp = document.getElementById("fileInput");
@@ -479,10 +483,15 @@
     if (newFileInput) {
       newFileInput.addEventListener("change", (e) => {
         if (e.target.files.length) {
-          const file = e.target.files[0];
-          selectedFile = file;
-          newUploadArea.innerHTML = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${escapeHtml(file.name)}</h3><p>${(file.size / 1024).toFixed(0)} KB</p>`;
-          autoUpload(file);
+          const files = Array.from(e.target.files).slice(0, 10);
+          selectedFiles = files;
+          let html = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${files.length} file dipilih</h3><p>`;
+          files.forEach((f) => {
+            html += f.name + " (" + (f.size / 1024).toFixed(0) + " KB)<br>";
+          });
+          html += "</p>";
+          newUploadArea.innerHTML = html;
+          autoUpload(files);
         }
       });
     }
@@ -498,10 +507,15 @@
       e.preventDefault();
       newUploadArea.classList.remove("dragover");
       if (e.dataTransfer.files.length) {
-        const file = e.dataTransfer.files[0];
-        selectedFile = file;
-        newUploadArea.innerHTML = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${escapeHtml(file.name)}</h3><p>${(file.size / 1024).toFixed(0)} KB</p>`;
-        autoUpload(file);
+        const files = Array.from(e.dataTransfer.files).slice(0, 10);
+        selectedFiles = files;
+        let html = `<i class="fas fa-check-circle" style="color:#51cf66;"></i><h3>${files.length} file dipilih</h3><p>`;
+        files.forEach((f) => {
+          html += f.name + " (" + (f.size / 1024).toFixed(0) + " KB)<br>";
+        });
+        html += "</p>";
+        newUploadArea.innerHTML = html;
+        autoUpload(files);
       }
     });
 
