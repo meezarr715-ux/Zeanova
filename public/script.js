@@ -27,7 +27,6 @@
       .forEach((inp) => (inp.value = ""));
     const progress = document.getElementById("uploadProgress");
     if (progress) progress.style.width = "0%";
-    // Reset upload area (dilakukan di initConvert)
     const uploadArea = document.getElementById("uploadArea");
     if (uploadArea) {
       uploadArea.innerHTML = `
@@ -36,7 +35,7 @@
         <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
         <input type="file" id="fileInput" accept="image/*" style="display:none;" />
       `;
-      initConvert(); // re-attach events
+      initConvert();
     }
   }
 
@@ -101,7 +100,7 @@
     container.classList.add("show");
   }
 
-  // ========== YOUTUBE (sama) ==========
+  // ========== YOUTUBE ==========
   const ytUrl = document.getElementById("ytUrl");
   const ytResult = document.getElementById("ytResult");
   const ytFormatRadios = document.querySelectorAll('input[name="ytFormat"]');
@@ -152,10 +151,7 @@
       }
     });
 
-  // ========== TIKTOK (scraper v2) ==========
-  const ttUrl = document.getElementById("ttUrl");
-  const ttResult = document.getElementById("ttResult");
-
+  // ========== TIKTOK (Slide gambar - hilangkan tombol audio jika tidak ada) ==========
   document
     .querySelector('.btn-download[data-platform="tiktok"]')
     .addEventListener("click", async () => {
@@ -184,16 +180,15 @@
         html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
 
         if (isImage && r.slides) {
-          // Slide gambar → satu tombol download semua foto
           const slides = r.slides;
           if (Array.isArray(slides) && slides.length > 0) {
             html += `<button class="btn-download" id="ttDownloadSlides"><i class="fas fa-images"></i> Download Semua Foto (${slides.length})</button>`;
           }
+          // Hanya tampilkan audio jika ada music_link
           if (r.music) {
             html += `<a href="${r.music}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
           }
         } else {
-          // Video
           if (download.no_watermark_hd) {
             html += `<a href="${download.no_watermark_hd}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
           }
@@ -210,7 +205,6 @@
         html += `</div>`;
         showResult(ttResult, html);
 
-        // Event untuk download slide
         if (isImage && r.slides) {
           const btn = document.getElementById("ttDownloadSlides");
           if (btn) {
@@ -236,7 +230,7 @@
       }
     });
 
-  // ========== SPOTIFY (sama) ==========
+  // ========== SPOTIFY ==========
   const spUrl = document.getElementById("spUrl");
   const spResult = document.getElementById("spResult");
 
@@ -271,10 +265,7 @@
       }
     });
 
-  // ========== INSTAGRAM (scraper instaddl) ==========
-  const igUrl = document.getElementById("igUrl");
-  const igResult = document.getElementById("igResult");
-
+  // ========== INSTAGRAM (fallback jika polling gagal) ==========
   document
     .querySelector('.btn-download[data-platform="instagram"]')
     .addEventListener("click", async () => {
@@ -364,7 +355,7 @@
     const uploadProgress = document.getElementById("uploadProgress");
     const linkHistory = document.getElementById("linkHistory");
 
-    // Clone untuk menghapus event lama
+    // Clone untuk hapus event lama
     const newUploadArea = uploadArea.cloneNode(true);
     uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
     const newFileInput = document.getElementById("fileInput");
@@ -407,13 +398,13 @@
       const item = document.createElement("div");
       item.className = "link-item";
       item.innerHTML = `
-        <div class="link-info">
-          <i class="fas fa-link"></i>
-          <span class="filename">${escapeHtml(filename)}</span>
-        </div>
-        <a href="${url}" class="link-url" target="_blank">${url}</a>
-        <button class="copy-btn" onclick="navigator.clipboard.writeText('${url}')"><i class="fas fa-copy"></i> Salin</button>
-      `;
+      <div class="link-info">
+        <i class="fas fa-link"></i>
+        <span class="filename">${escapeHtml(filename)}</span>
+      </div>
+      <a href="${url}" class="link-url" target="_blank">${url}</a>
+      <button class="copy-btn" onclick="navigator.clipboard.writeText('${url}')"><i class="fas fa-copy"></i> Salin</button>
+    `;
       linkHistory.prepend(item);
       if (save) saveHistory();
     }
@@ -422,11 +413,11 @@
       selectedFile = null;
       if (newFileInput) newFileInput.value = "";
       newUploadArea.innerHTML = `
-        <i class="fas fa-cloud-upload-alt"></i>
-        <h3>Drag & drop gambar di sini</h3>
-        <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
-        <input type="file" id="fileInput" accept="image/*" style="display:none;" />
-      `;
+      <i class="fas fa-cloud-upload-alt"></i>
+      <h3>Drag & drop gambar di sini</h3>
+      <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
+      <input type="file" id="fileInput" accept="image/*" style="display:none;" />
+    `;
       // Re-attach events
       initConvert();
     }
@@ -450,13 +441,17 @@
         };
         xhr.onload = () => {
           if (xhr.status === 200) {
-            const data = JSON.parse(xhr.responseText);
-            if (data.success) {
-              addLinkToHistory(file.name, data.url);
-              resetUploadArea();
-              uploadProgress.style.width = "0%";
-            } else {
-              alert("Upload gagal: " + (data.message || "Unknown error"));
+            try {
+              const data = JSON.parse(xhr.responseText);
+              if (data.success) {
+                addLinkToHistory(file.name, data.url);
+                resetUploadArea();
+                uploadProgress.style.width = "0%";
+              } else {
+                alert("Upload gagal: " + (data.message || "Unknown error"));
+              }
+            } catch (e) {
+              alert("Respon server tidak valid");
             }
           } else {
             alert("Server error: " + xhr.status);

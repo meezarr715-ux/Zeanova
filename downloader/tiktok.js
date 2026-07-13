@@ -1,7 +1,6 @@
 /**
  * Base  : https://play.google.com/store/apps/details?id=com.universal.video.downloader
  * Fitur : Downloader TikTok v2 — no watermark, HD, audio, slide, + metadata
- * Contact  : +62 895-3722-11983
  **/
 
 "use strict";
@@ -12,7 +11,6 @@ const crypto = require("crypto");
 const BASE_URL = "https://appdl.pro/";
 const APP_VERSION = "1.55";
 
-// Salt yang di-embed di APK
 const SSS_SALT = "ssstik.io";
 const SSS_KEY = "b0lF_14022023_DK";
 

@@ -16,7 +16,6 @@ app.use(cors());
 app.use(express.json({ limit: "50mb" }));
 app.use(express.urlencoded({ extended: true, limit: "50mb" }));
 
-// Untuk Vercel, kita tidak bisa menulis file secara permanen, tapi kita bisa gunakan /tmp
 const TEMP_DIR = "/tmp";
 if (!fs.existsSync(TEMP_DIR)) fs.mkdirSync(TEMP_DIR, { recursive: true });
 
@@ -37,12 +36,6 @@ app.post("/api/download/youtube", async (req, res) => {
     const result = await downloadYoutube(url, format, TEMP_DIR);
     if (!result.success)
       return res.status(500).json({ success: false, message: result.message });
-    // Untuk Vercel, kita kirimkan file sebagai attachment langsung (karena tidak bisa serve static)
-    // Tapi kita kirimkan URL download sementara (file disimpan di /tmp, akan hilang setelah request selesai)
-    // Cara terbaik: kirimkan file sebagai response stream.
-    // Namun karena kita sudah punya endpoint /temp, kita akan kirimkan path file.
-    // Di Vercel, kita tidak bisa menyimpan file untuk di-download nanti, jadi kita akan kirim file langsung.
-    // Ubah response: kirim file langsung.
     const filePath = result.data.filePath;
     if (fs.existsSync(filePath)) {
       return res.download(filePath, result.data.filename, (err) => {
@@ -66,7 +59,7 @@ app.post("/api/download/tiktok", async (req, res) => {
       .status(400)
       .json({ success: false, message: "URL TikTok wajib diisi" });
   try {
-    const result = await downloadTiktok(url);
+    const result = await downloadTiktok(url, { hd: true });
     if (!result.status)
       return res.status(500).json({ success: false, message: result.error });
     res.json({ success: true, data: result.result });
@@ -97,7 +90,11 @@ app.post("/api/download/instagram", async (req, res) => {
       .json({ success: false, message: "URL Instagram wajib diisi" });
   try {
     const result = await downloadInstagram(url);
-    res.json(result);
+    if (!result.success)
+      return res
+        .status(500)
+        .json({ success: false, message: result.error || "Gagal" });
+    res.json({ success: true, data: result.data });
   } catch (err) {
     res.status(500).json({ success: false, message: err.message });
   }
@@ -121,7 +118,7 @@ app.post("/api/upload/catbox", upload.single("file"), async (req, res) => {
   }
 });
 
-// ===== Untuk development local, kita serve static files =====
+// ===== Development only =====
 if (process.env.NODE_ENV !== "production") {
   app.use(express.static(path.join(__dirname, "../public")));
   app.get("*", (req, res) => {
@@ -129,5 +126,4 @@ if (process.env.NODE_ENV !== "production") {
   });
 }
 
-// ===== Export untuk Vercel =====
 module.exports = app;
