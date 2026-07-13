@@ -104,40 +104,19 @@ async function downloadInstagram(url) {
       const searchResult = document.querySelector("#search-result");
       const errorEl = searchResult.querySelector(".error");
       if (errorEl) return { error: errorEl.innerText.trim() };
-
-      // Klasifikasi link: foto dan video
       const links = [];
-      const photoLinks = [];
-      const videoLinks = [];
-
       searchResult.querySelectorAll("a").forEach((a) => {
         const href = a.getAttribute("href");
-        const text = a.innerText.trim().toLowerCase();
+        const text = a.innerText.trim();
         if (
           href &&
           href.startsWith("http") &&
           (href.includes("snapcdn") || href.includes("token="))
         ) {
-          // Cek apakah link menuju gambar atau video
-          if (
-            href.match(/\.(jpg|jpeg|png|gif|webp)/i) ||
-            text.includes("photo") ||
-            text.includes("gambar")
-          ) {
-            photoLinks.push({ url: href, type: "Photo" });
-          } else {
-            videoLinks.push({ url: href, type: "Video" });
-          }
+          links.push({ url: href, type: text || "Download" });
         }
       });
-
-      // Gabungkan, prioritaskan foto
-      const allLinks = [...photoLinks, ...videoLinks];
-      return {
-        links: allLinks,
-        photoCount: photoLinks.length,
-        videoCount: videoLinks.length,
-      };
+      return { links };
     });
 
     await browser.close();
@@ -145,14 +124,7 @@ async function downloadInstagram(url) {
     if (result.error) return { success: false, error: result.error };
     if (!result.links || result.links.length === 0)
       return { success: false, error: "Tidak ada link download ditemukan" };
-
-    // Kembalikan dengan info foto/video
-    return {
-      success: true,
-      downloadLinks: result.links,
-      photoCount: result.photoCount,
-      videoCount: result.videoCount,
-    };
+    return { success: true, downloadLinks: result.links };
   } catch (error) {
     if (browser) await browser.close().catch(() => {});
     return { success: false, error: error.message };

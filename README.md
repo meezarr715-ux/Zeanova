@@ -1,26 +1,26 @@
 # Zeanova Library
 
-Aplikasi web lengkap untuk mendownload media dari YouTube, TikTok, Spotify, Instagram, dan mengubah gambar menjadi link menggunakan Catbox.
+Aplikasi web untuk mendownload media dari YouTube, TikTok, Spotify, Instagram, dan mengubah gambar menjadi link menggunakan Catbox.
 
 ## Fitur
 
 - **Beranda**: Pengenalan web dengan thumbnail dan statistik.
-- **Downloader**: 4 platform (YouTube, TikTok, Spotify, Instagram).
-- **Convert**: Upload gambar ke Catbox dengan progress bar dan riwayat link.
+- **Downloader**: YouTube (MP3/MP4), TikTok (HD/WM/Audio & Slide Foto), Spotify (single track), Instagram (Foto & Video).
+- **Convert**: Upload gambar ke Catbox otomatis dengan riwayat 10 link terakhir (hilang setelah 30 detik atau refresh).
 - **Laporan Bug**: Tautan ke Google Forms.
 
-## Instalasi
+## Deploy ke Vercel
 
-1. Clone repositori ini.
-2. Jalankan `npm install` untuk menginstal dependensi.
-3. Jalankan `npm start` atau `npm run dev`.
-4. Buka `http://localhost:3000` di browser.
+1. Clone repositori.
+2. Jalankan `npm install`.
+3. Pastikan `vercel.json` dan `api/index.js` sudah ada.
+4. Deploy dengan `vercel --prod`.
 
 ## Struktur Proyek
 
 zeanova-library/
-├── package.json
-├── server.js
+├── api/
+│ └── index.js
 ├── downloader/
 │ ├── youtube.js
 │ ├── tiktok.js
@@ -31,4 +31,6 @@ zeanova-library/
 │ ├── index.html
 │ ├── style.css
 │ └── script.js
+├── package.json
+├── vercel.json
 └── README.md

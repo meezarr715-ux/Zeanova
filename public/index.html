@@ -6,7 +6,7 @@
     <title>Zeanova Library</title>
     <link
       rel="icon"
-      href="https://files.catbox.moe/0p6az8.jpeg"
+      href="https://files.catbox.moe/pg3c9i.jpg"
       type="image/jpeg"
     />
     <link
@@ -22,7 +22,7 @@
         <div class="nav-container">
           <div class="nav-brand">
             <img
-              src="https://files.catbox.moe/0p6az8.jpeg"
+              src="https://files.catbox.moe/pg3c9i.jpg"
               alt="Logo"
               class="brand-logo"
             />
@@ -140,16 +140,6 @@
 
           <!-- Panel YouTube -->
           <div class="dl-panel active" data-platform="youtube">
-            <div class="input-group">
-              <input
-                type="text"
-                id="ytUrl"
-                placeholder="https://www.youtube.com/watch?v=..."
-              />
-              <button class="btn-download" data-platform="youtube">
-                <i class="fas fa-arrow-down"></i> Download
-              </button>
-            </div>
             <div class="format-selector">
               <label
                 ><input type="radio" name="ytFormat" value="mp3" checked /> MP3
@@ -160,6 +150,16 @@
                 (Video)</label
               >
             </div>
+            <div class="input-group">
+              <input
+                type="text"
+                id="ytUrl"
+                placeholder="https://www.youtube.com/"
+              />
+              <button class="btn-download" data-platform="youtube">
+                <i class="fas fa-arrow-down"></i> Download
+              </button>
+            </div>
             <div class="result-box" id="ytResult"></div>
           </div>
 
@@ -169,7 +169,7 @@
               <input
                 type="text"
                 id="ttUrl"
-                placeholder="https://vt.tiktok.com/... atau https://www.tiktok.com/..."
+                placeholder="https://vt.tiktok.com/"
               />
               <button class="btn-download" data-platform="tiktok">
                 <i class="fas fa-arrow-down"></i> Download
@@ -184,7 +184,7 @@
               <input
                 type="text"
                 id="spUrl"
-                placeholder="https://open.spotify.com/track/..."
+                placeholder="https://open.spotify.com/."
               />
               <button class="btn-download" data-platform="spotify">
                 <i class="fas fa-arrow-down"></i> Download
@@ -199,7 +199,7 @@
               <input
                 type="text"
                 id="igUrl"
-                placeholder="https://www.instagram.com/reel/... atau /p/..."
+                placeholder="https://www.instagram.com/"
               />
               <button class="btn-download" data-platform="instagram">
                 <i class="fas fa-arrow-down"></i> Download
@@ -212,16 +212,16 @@
         <!-- ===== CONVERT ===== -->
         <section class="tab-content" id="page-convert">
           <h2 class="section-title">
-            <i class="fas fa-exchange-alt"></i> Convert Gambar ke Link
+            <i class="fas fa-exchange-alt"></i> Convert File to Link
           </h2>
           <p class="section-desc">
-            Unggah gambar dan dapatkan link permanen dari Catbox.
+            Unggah media/file dan dapatkan link dari file yang diunggah.
           </p>
 
           <div class="convert-box">
             <div class="upload-area" id="uploadArea">
               <i class="fas fa-cloud-upload-alt"></i>
-              <h3>Drag & drop gambar di sini</h3>
+              <h3>Drag & drop file di sini</h3>
               <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
               <input
                 type="file"
@@ -235,7 +235,6 @@
             </div>
           </div>
 
-          <!-- Daftar link (tanpa judul) -->
           <div class="link-history">
             <div class="link-list" id="linkHistory">
               <div class="empty-msg">Belum ada link yang dihasilkan.</div>
@@ -271,8 +270,9 @@
 
       <!-- ========== FOOTER ========== -->
       <footer class="footer">
-        &copy; 2026 <strong>Zeanova Library</strong> — Dibuat dengan
-        <i class="fas fa-heart" style="color: #ff6b6b"></i> untuk semua
+        &copy; 2026 <strong>Zeanova Library</strong> — All rights reserved. |
+        Developed by
+        <a href="https://github.com/zeanova" target="_blank">Zeanova Dev</a>
       </footer>
     </div>
 

@@ -96,16 +96,14 @@ async function downloadYoutube(url, format, tempDir) {
     const stats = await fs.promises.stat(filePath);
     const sizeMB = (stats.size / (1024 * 1024)).toFixed(2);
 
-    const downloadUrl = `/temp/${encodeURIComponent(filename)}`;
-
     return {
       success: true,
       data: {
         title,
-        duration: "—",
         size: `${sizeMB} MB`,
         filename,
-        downloadUrl,
+        filePath,
+        downloadUrl: null, // tidak digunakan
       },
     };
   } catch (err) {
