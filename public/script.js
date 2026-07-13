@@ -12,28 +12,22 @@
   const navToggle = document.getElementById("navToggle");
   const navMenu = document.getElementById("navMenu");
 
-  // Fungsi reset semua state (link, result, sessionStorage)
   function resetAllState() {
-    // Hapus sessionStorage
     sessionStorage.removeItem("zeanova_links");
-    // Kosongkan riwayat convert
     const linkHistory = document.getElementById("linkHistory");
     if (linkHistory) {
       linkHistory.innerHTML = `<div class="empty-msg">Belum ada link yang dihasilkan.</div>`;
     }
-    // Kosongkan semua result box
     document.querySelectorAll(".result-box").forEach((box) => {
       box.classList.remove("show");
       box.innerHTML = "";
     });
-    // Kosongkan input URL
     document
       .querySelectorAll(".input-group input")
       .forEach((inp) => (inp.value = ""));
-    // Reset progress
     const progress = document.getElementById("uploadProgress");
     if (progress) progress.style.width = "0%";
-    // Reset upload area
+    // Reset upload area (dilakukan di initConvert)
     const uploadArea = document.getElementById("uploadArea");
     if (uploadArea) {
       uploadArea.innerHTML = `
@@ -42,7 +36,7 @@
         <p>atau klik untuk memilih file (JPG, PNG, GIF, dll.)</p>
         <input type="file" id="fileInput" accept="image/*" style="display:none;" />
       `;
-      // Re-attach events (dilakukan di initConvert)
+      initConvert(); // re-attach events
     }
   }
 
@@ -55,7 +49,6 @@
         tabContents[key].classList.toggle("active", key === page);
       });
       navMenu.classList.remove("open");
-      // Reset semua state saat pindah nav
       resetAllState();
     });
   });
@@ -76,7 +69,6 @@
       dlPanels.forEach((p) => {
         p.classList.toggle("active", p.dataset.platform === platform);
       });
-      // Reset result box saat pindah tab downloader
       document.querySelectorAll(".result-box").forEach((box) => {
         box.classList.remove("show");
         box.innerHTML = "";
@@ -109,7 +101,7 @@
     container.classList.add("show");
   }
 
-  // ========== YOUTUBE ==========
+  // ========== YOUTUBE (sama) ==========
   const ytUrl = document.getElementById("ytUrl");
   const ytResult = document.getElementById("ytResult");
   const ytFormatRadios = document.querySelectorAll('input[name="ytFormat"]');
@@ -134,7 +126,6 @@
           const err = await resp.json();
           throw new Error(err.message || "Gagal");
         }
-        // Karena kita kirim file langsung, kita buat link download dari blob
         const blob = await resp.blob();
         const downloadUrl = URL.createObjectURL(blob);
         const contentDisposition = resp.headers.get("content-disposition");
@@ -152,7 +143,6 @@
         </div>
       `,
         );
-        // Kosongkan input setelah download
         ytUrl.value = "";
       } catch (err) {
         showResult(
@@ -162,7 +152,7 @@
       }
     });
 
-  // ========== TIKTOK ==========
+  // ========== TIKTOK (scraper v2) ==========
   const ttUrl = document.getElementById("ttUrl");
   const ttResult = document.getElementById("ttResult");
 
@@ -182,60 +172,54 @@
         if (!resp.ok || !data.success)
           throw new Error(data.message || data.error || "Gagal");
         const r = data.data;
-        const meta = r.metadata || {};
-        const author = r.author || {};
+        const isImage = r.type === "image";
+        const download = r.download || {};
         const stats = r.stats || {};
-        const isSlide = r.isSlide || false;
+        const author = r.author || {};
 
         let html = `<div class="success"><i class="fas fa-check-circle"></i> Berhasil</div>`;
-        html += `<div><strong>Deskripsi:</strong> ${escapeHtml(meta.description || "—")}</div>`;
-        html += `<div><strong>Author:</strong> ${escapeHtml(author.nickname || author.uniqueId || "—")}</div>`;
+        html += `<div><strong>Deskripsi:</strong> ${escapeHtml(r.title || "—")}</div>`;
+        html += `<div><strong>Author:</strong> ${escapeHtml(author.nickname || author.username || "—")}</div>`;
         html += `<div><strong>Like:</strong> ${formatNumber(stats.likes)}</div>`;
         html += `<div style="margin-top:12px; display:flex; flex-wrap:wrap; gap:8px;">`;
 
-        if (isSlide) {
-          // Slide gambar -> satu tombol download semua foto
-          const images = r.originalUrl?.images || [];
-          if (images.length > 0) {
-            html += `<button class="btn-download" id="downloadAllImagesBtn"><i class="fas fa-images"></i> Download Semua Foto (${images.length})</button>`;
+        if (isImage && r.slides) {
+          // Slide gambar → satu tombol download semua foto
+          const slides = r.slides;
+          if (Array.isArray(slides) && slides.length > 0) {
+            html += `<button class="btn-download" id="ttDownloadSlides"><i class="fas fa-images"></i> Download Semua Foto (${slides.length})</button>`;
           }
-          if (r.originalUrl?.audio) {
-            html += `<a href="${r.originalUrl.audio}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
+          if (r.music) {
+            html += `<a href="${r.music}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
           }
         } else {
           // Video
-          const urls = r.originalUrl || {};
-          if (urls.hd_nonwatermark) {
-            html += `<a href="${urls.hd_nonwatermark}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
+          if (download.no_watermark_hd) {
+            html += `<a href="${download.no_watermark_hd}" class="btn-download" target="_blank"><i class="fas fa-video"></i> Download HD</a>`;
           }
-          if (urls.watermark) {
-            html += `<a href="${urls.watermark}" class="btn-download secondary" target="_blank"><i class="fas fa-water"></i> Download WM</a>`;
+          if (download.no_watermark) {
+            html += `<a href="${download.no_watermark}" class="btn-download secondary" target="_blank"><i class="fas fa-video"></i> Download No WM</a>`;
           }
-          if (r.music && r.music.playUrl) {
-            html += `<a href="${r.music.playUrl}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
+          if (download.watermark) {
+            html += `<a href="${download.watermark}" class="btn-download secondary" target="_blank"><i class="fas fa-water"></i> Download WM</a>`;
           }
-          // Cloud URLs jika ada
-          if (r.cloudUrl && r.cloudUrl.hd_nonwatermark) {
-            html += `<a href="${r.cloudUrl.hd_nonwatermark}" class="btn-download secondary" target="_blank"><i class="fas fa-cloud"></i> Cloud HD</a>`;
-          }
-          if (r.cloudUrl && r.cloudUrl.watermark) {
-            html += `<a href="${r.cloudUrl.watermark}" class="btn-download secondary" target="_blank"><i class="fas fa-cloud"></i> Cloud WM</a>`;
+          if (r.music) {
+            html += `<a href="${r.music}" class="btn-download secondary" target="_blank"><i class="fas fa-music"></i> Download Audio</a>`;
           }
         }
         html += `</div>`;
         showResult(ttResult, html);
 
-        // Jika slide, tambahkan event untuk download semua gambar
-        if (isSlide) {
-          const images = r.originalUrl?.images || [];
-          const btn = document.getElementById("downloadAllImagesBtn");
+        // Event untuk download slide
+        if (isImage && r.slides) {
+          const btn = document.getElementById("ttDownloadSlides");
           if (btn) {
             btn.addEventListener("click", () => {
-              images.forEach((img, i) => {
+              r.slides.forEach((img, i) => {
                 setTimeout(() => {
                   const a = document.createElement("a");
                   a.href = img;
-                  a.download = `tiktok_photo_${i + 1}.jpg`;
+                  a.download = `tiktok_slide_${i + 1}.jpg`;
                   a.target = "_blank";
                   a.click();
                 }, i * 500);
@@ -243,7 +227,6 @@
             });
           }
         }
-
         ttUrl.value = "";
       } catch (err) {
         showResult(
@@ -253,7 +236,7 @@
       }
     });
 
-  // ========== SPOTIFY ==========
+  // ========== SPOTIFY (sama) ==========
   const spUrl = document.getElementById("spUrl");
   const spResult = document.getElementById("spResult");
 
@@ -288,7 +271,7 @@
       }
     });
 
-  // ========== INSTAGRAM ==========
+  // ========== INSTAGRAM (scraper instaddl) ==========
   const igUrl = document.getElementById("igUrl");
   const igResult = document.getElementById("igResult");
 
@@ -305,20 +288,20 @@
           body: JSON.stringify({ url }),
         });
         const data = await resp.json();
-        if (!resp.ok || !data.success) throw new Error(data.error || "Gagal");
-        const links = data.downloadLinks || [];
-        if (links.length === 0) throw new Error("Tidak ada link ditemukan");
+        if (!resp.ok || !data.success)
+          throw new Error(data.message || data.error || "Gagal");
+        const links = data.data || [];
+        if (!Array.isArray(links) || links.length === 0)
+          throw new Error("Tidak ada link ditemukan");
 
-        // Pisahkan foto dan video (berdasarkan tipe atau ekstensi)
         const photoLinks = links.filter(
           (l) =>
-            l.type.toLowerCase().includes("photo") ||
-            l.url.match(/\.(jpg|jpeg|png|gif|webp)/i),
+            l.type === "photo" ||
+            (typeof l === "string" && !l.includes(".mp4")),
         );
         const videoLinks = links.filter(
           (l) =>
-            l.type.toLowerCase().includes("video") ||
-            l.url.match(/\.(mp4|mov|avi)/i),
+            l.type === "video" || (typeof l === "string" && l.includes(".mp4")),
         );
 
         let html = `<div class="success"><i class="fas fa-check-circle"></i> ${links.length} link ditemukan</div>`;
@@ -332,14 +315,14 @@
         html += `</div>`;
         showResult(igResult, html);
 
-        // Event untuk download foto
         const photoBtn = document.getElementById("igDownloadPhotos");
         if (photoBtn) {
           photoBtn.addEventListener("click", () => {
-            photoLinks.forEach((link, i) => {
+            photoLinks.forEach((item, i) => {
+              const url = typeof item === "string" ? item : item.url;
               setTimeout(() => {
                 const a = document.createElement("a");
-                a.href = link.url;
+                a.href = url;
                 a.download = `ig_photo_${i + 1}.jpg`;
                 a.target = "_blank";
                 a.click();
@@ -350,10 +333,11 @@
         const videoBtn = document.getElementById("igDownloadVideos");
         if (videoBtn) {
           videoBtn.addEventListener("click", () => {
-            videoLinks.forEach((link, i) => {
+            videoLinks.forEach((item, i) => {
+              const url = typeof item === "string" ? item : item.url;
               setTimeout(() => {
                 const a = document.createElement("a");
-                a.href = link.url;
+                a.href = url;
                 a.download = `ig_video_${i + 1}.mp4`;
                 a.target = "_blank";
                 a.click();
@@ -361,7 +345,6 @@
             });
           });
         }
-
         igUrl.value = "";
       } catch (err) {
         showResult(
@@ -381,12 +364,11 @@
     const uploadProgress = document.getElementById("uploadProgress");
     const linkHistory = document.getElementById("linkHistory");
 
-    // Hapus event listener lama dengan clone
+    // Clone untuk menghapus event lama
     const newUploadArea = uploadArea.cloneNode(true);
     uploadArea.parentNode.replaceChild(newUploadArea, uploadArea);
     const newFileInput = document.getElementById("fileInput");
 
-    // Load history
     function loadHistory() {
       const stored = sessionStorage.getItem("zeanova_links");
       if (stored) {
@@ -438,7 +420,7 @@
 
     function resetUploadArea() {
       selectedFile = null;
-      newFileInput.value = "";
+      if (newFileInput) newFileInput.value = "";
       newUploadArea.innerHTML = `
         <i class="fas fa-cloud-upload-alt"></i>
         <h3>Drag & drop gambar di sini</h3>
@@ -493,14 +475,14 @@
     }
 
     // Event listeners
-    newUploadArea.addEventListener("click", () => {
+    newUploadArea.addEventListener("click", (e) => {
+      if (e.target.closest("button") || e.target.closest("a")) return;
       const inp = document.getElementById("fileInput");
       if (inp) inp.click();
     });
 
-    const fileInputElem = document.getElementById("fileInput");
-    if (fileInputElem) {
-      fileInputElem.addEventListener("change", (e) => {
+    if (newFileInput) {
+      newFileInput.addEventListener("change", (e) => {
         if (e.target.files.length) {
           const file = e.target.files[0];
           selectedFile = file;

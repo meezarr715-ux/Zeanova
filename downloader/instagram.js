@@ -1,133 +1,98 @@
-const puppeteer = require("puppeteer-extra");
-const StealthPlugin = require("puppeteer-extra-plugin-stealth");
-puppeteer.use(StealthPlugin());
+const axios = require("axios");
 
-function generateRandomIP() {
-  const ranges = [
-    [1, 1],
-    [2, 2],
-    [5, 5],
-    [23, 23],
-    [27, 27],
-    [31, 31],
-    [36, 36],
-    [37, 37],
-    [39, 39],
-    [42, 42],
-    [46, 46],
-    [49, 49],
-    [50, 50],
-    [60, 60],
-    [114, 114],
-    [117, 117],
-    [118, 118],
-    [119, 119],
-    [120, 120],
-    [121, 121],
-    [122, 122],
-    [123, 123],
-    [124, 124],
-    [125, 125],
-    [126, 126],
-    [180, 180],
-    [182, 182],
-    [183, 183],
-  ];
-  const range = ranges[Math.floor(Math.random() * ranges.length)];
-  return `${range[0]}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}.${Math.floor(Math.random() * 256)}`;
+async function getDynamicApiKey() {
+  const htmlRes = await axios.get("https://instaddl.com/");
+  const scriptMatch = htmlRes.data.match(
+    /src="([^"]*assets\/index-[^"]*\.js)"/,
+  );
+  if (!scriptMatch) throw new Error("Failed to find script URL");
+  const jsUrl = "https://instaddl.com" + scriptMatch[1];
+
+  const jsRes = await axios.get(jsUrl);
+  const keyMatch = jsRes.data.match(
+    /(eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9\.[^"'\s]+)/,
+  );
+  if (!keyMatch) throw new Error("Failed to extract API key");
+
+  return keyMatch[1];
 }
 
 async function downloadInstagram(url) {
-  if (!url || !/^(https?:\/\/)?(www\.)?instagram\.com\//i.test(url)) {
-    return { success: false, error: "URL Instagram tidak valid" };
-  }
-  let browser;
   try {
-    browser = await puppeteer.launch({
-      headless: true,
-      protocolTimeout: 0,
-      args: [
-        "--no-sandbox",
-        "--disable-setuid-sandbox",
-        "--disable-dev-shm-usage",
-        "--disable-gpu",
-      ],
-    });
-    const page = await browser.newPage();
-    const spoofedIp = generateRandomIP();
-    await page.setExtraHTTPHeaders({
-      "X-Forwarded-For": spoofedIp,
-      "X-Real-IP": spoofedIp,
-      "Client-IP": spoofedIp,
-      "True-Client-IP": spoofedIp,
-      "X-Originating-IP": spoofedIp,
-      "X-Cluster-Client-IP": spoofedIp,
-      Forwarded: `for=${spoofedIp}`,
-    });
-    await page.setViewport({ width: 1280, height: 720 });
-    await page.setDefaultNavigationTimeout(0);
+    const apiKey = await getDynamicApiKey();
+    const authorization = `Bearer ${apiKey}`;
 
-    await page.goto("https://snapinsta.to/en", {
-      waitUntil: "domcontentloaded",
-      timeout: 0,
-    });
-    await page.waitForFunction(
-      () => {
-        const title = document.title;
-        const isChallenge =
-          title.includes("Just a moment...") ||
-          document.querySelector("#challenge-form") ||
-          document.querySelector("#cf-challenge-running");
-        return !isChallenge;
+    const { data: create } = await axios.post(
+      "https://eoehwyffvhpmvpeblkbi.supabase.co/functions/v1/instagram-fetch",
+      { url },
+      {
+        headers: {
+          "user-agent":
+            "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+          origin: "https://instaddl.com",
+          referer: "https://instaddl.com/",
+          "content-type": "application/json",
+          "x-client-info": "supabase-js-web/2.58.0",
+          apikey: apiKey,
+          authorization: authorization,
+        },
       },
-      { timeout: 0 },
     );
+    if (!create.success) throw new Error("Gagal memulai fetch");
 
-    await page.waitForSelector("#s_input", { timeout: 0 });
-    await page.type("#s_input", url);
-    await page.click(".btn-default");
-
-    await page.waitForFunction(
-      () => {
-        const searchResult = document.querySelector("#search-result");
-        if (!searchResult) return false;
-        const hasError = searchResult.querySelector(".error");
-        const hasDownload = searchResult.querySelector(
-          'a[href*="snapcdn.app"], a[href*="token="], .download-content a',
-        );
-        return hasError || hasDownload;
-      },
-      { timeout: 0 },
-    );
-
-    const result = await page.evaluate(() => {
-      const searchResult = document.querySelector("#search-result");
-      const errorEl = searchResult.querySelector(".error");
-      if (errorEl) return { error: errorEl.innerText.trim() };
-      const links = [];
-      searchResult.querySelectorAll("a").forEach((a) => {
-        const href = a.getAttribute("href");
-        const text = a.innerText.trim();
-        if (
-          href &&
-          href.startsWith("http") &&
-          (href.includes("snapcdn") || href.includes("token="))
-        ) {
-          links.push({ url: href, type: text || "Download" });
+    for (let i = 0; i < 20; i++) {
+      await new Promise((resolve) => setTimeout(resolve, 2000));
+      const { data: result } = await axios.post(
+        "https://eoehwyffvhpmvpeblkbi.supabase.co/functions/v1/instagram-poll",
+        { runId: create.runId, datasetId: create.datasetId, url },
+        {
+          headers: {
+            "user-agent":
+              "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/109.0.0.0 Safari/537.36",
+            origin: "https://instaddl.com",
+            referer: "https://instaddl.com/",
+            "content-type": "application/json",
+            "x-client-info": "supabase-js-web/2.58.0",
+            apikey: apiKey,
+            authorization: authorization,
+          },
+        },
+      );
+      if (result.data && !result.pending) {
+        // Ambil daftar link dari result.data (bisa array objek dengan url)
+        let links = [];
+        if (Array.isArray(result.data)) {
+          links = result.data.map((item) => ({
+            url: item.url || item,
+            type:
+              item.type ||
+              (item.url && (item.url.includes(".mp4") ? "video" : "photo")),
+          }));
+        } else if (typeof result.data === "object") {
+          // Bisa berbentuk { images: [...], videos: [...] }
+          if (result.data.images) {
+            result.data.images.forEach((img) => {
+              links.push({ url: img, type: "photo" });
+            });
+          }
+          if (result.data.videos) {
+            result.data.videos.forEach((vid) => {
+              links.push({ url: vid, type: "video" });
+            });
+          }
+          if (result.data.url) {
+            links.push({
+              url: result.data.url,
+              type: result.data.type || "photo",
+            });
+          }
         }
-      });
-      return { links };
-    });
-
-    await browser.close();
-
-    if (result.error) return { success: false, error: result.error };
-    if (!result.links || result.links.length === 0)
-      return { success: false, error: "Tidak ada link download ditemukan" };
-    return { success: true, downloadLinks: result.links };
-  } catch (error) {
-    if (browser) await browser.close().catch(() => {});
-    return { success: false, error: error.message };
+        return { success: true, data: links };
+      }
+    }
+    throw new Error("Timeout menunggu hasil");
+  } catch (err) {
+    return { success: false, error: err.message };
   }
 }
 

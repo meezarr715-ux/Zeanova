@@ -1,244 +1,164 @@
+/**
+ * Base  : https://play.google.com/store/apps/details?id=com.universal.video.downloader
+ * Fitur : Downloader TikTok v2 — no watermark, HD, audio, slide, + metadata
+ * Contact  : +62 895-3722-11983
+ **/
+
+"use strict";
+
 const axios = require("axios");
-const cheerio = require("cheerio");
-const { CookieJar } = require("tough-cookie");
-const { wrapper } = require("axios-cookiejar-support");
-const FormData = require("form-data");
-const { createReadStream, existsSync } = require("fs");
+const crypto = require("crypto");
 
-const UPLOAD_URL = "https://www.cloudsky.biz.id/api/public/upload";
-const BASE_FILE_URL = "https://www.cloudsky.biz.id/api/file";
+const BASE_URL = "https://appdl.pro/";
+const APP_VERSION = "1.55";
 
-async function uploadFile(fileInput, fileName = null) {
+// Salt yang di-embed di APK
+const SSS_SALT = "ssstik.io";
+const SSS_KEY = "b0lF_14022023_DK";
+
+const client = axios.create({ baseURL: BASE_URL });
+
+function simpleIntStrConvert(text) {
+  let out = "";
+  for (const ch of text.split("")) {
+    out += String(ch.charCodeAt(0)).padStart(3, "0");
+  }
+  return out;
+}
+
+function md5(str) {
+  return crypto
+    .createHash("md5")
+    .update(Buffer.from(str, "utf8"))
+    .digest("hex");
+}
+
+function generateTs() {
+  return String(Math.floor(Date.now() / 1000 / 60));
+}
+
+function generateTt(id, ts) {
+  const raw = ts + APP_VERSION + id + SSS_SALT + SSS_KEY;
+  const conv = simpleIntStrConvert(raw);
+  return md5(String(conv.length) + conv);
+}
+
+function buildUserAgent(ip = "192.168.0.101") {
+  return `ssstik.io/${APP_VERSION}/${ip}/(com.universal.video.downloader)`;
+}
+
+const cookieStore = {};
+
+function grabCookies(res) {
+  const setCookie = res.headers?.["set-cookie"];
+  if (!Array.isArray(setCookie)) return;
+  for (const c of setCookie) {
+    const [pair] = c.split(";");
+    const idx = pair.indexOf("=");
+    if (idx > 0)
+      cookieStore[pair.slice(0, idx).trim()] = pair.slice(idx + 1).trim();
+  }
+}
+
+function cookieHeader() {
+  const keys = Object.keys(cookieStore);
+  return keys.length
+    ? keys.map((k) => `${k}=${cookieStore[k]}`).join("; ")
+    : null;
+}
+
+async function fetchInfo(id, hd = false) {
+  const ts = generateTs();
+  const tt = generateTt(id, ts);
+
+  const payload = new URLSearchParams({ id, locale: "en", tt, ts }).toString();
+
+  const cookie = cookieHeader();
+  const res = await client.post(hd ? "1/fetch?hd" : "1/fetch", payload, {
+    headers: {
+      "user-agent": buildUserAgent(),
+      authorization:
+        "d9a97b094b5a1cdbfaab98d117031de5f01e4faec165c5a6bdc452d1a52fc268",
+      accept: "application/json",
+      "content-type": "application/x-www-form-urlencoded",
+      "accept-encoding": "gzip",
+      ...(cookie ? { cookie } : {}),
+    },
+    decompress: true,
+    validateStatus: () => true,
+  });
+
+  grabCookies(res);
+  return res.data;
+}
+
+function formatResult(d) {
+  const isImage =
+    d.type === 2 || (typeof d.slides === "string" && d.slides.length > 0);
+  return {
+    id: d.itemId,
+    type: isImage ? "image" : "video",
+    title: d.text || null,
+    author: {
+      id: d.author_id,
+      username: d.author_unique_id,
+      nickname: d.author_nickname,
+      avatar: d.author_cover_link || null,
+    },
+    stats: {
+      views: d.play_count,
+      likes: d.like_count,
+      comments: d.comment_count,
+      shares: d.share_count,
+    },
+    duration: d.duration,
+    create_time: d.create_time,
+    cover: d.cover_link || d.origin_cover || null,
+    music: d.music_link || null,
+    download: {
+      no_watermark: d.no_watermark_link || null,
+      no_watermark_hd: d.no_watermark_link_hd || null,
+      watermark: d.watermark_link || null,
+    },
+    slides: d.slides ? d.slides : null,
+    original: d.original || null,
+  };
+}
+
+const tiktokDownloaderV2 = async (url, options = {}) => {
   try {
-    const form = new FormData();
-    if (Buffer.isBuffer(fileInput)) {
-      if (!fileName)
-        throw new Error("fileName wajib disertakan jika menggunakan Buffer");
-      form.append("file", fileInput, { filename: fileName });
-    } else if (typeof fileInput === "string") {
-      if (!existsSync(fileInput))
-        throw new Error(`File tidak ditemukan di path: ${fileInput}`);
-      form.append("file", createReadStream(fileInput));
-    } else {
-      throw new Error(
-        "Input tidak valid: harus berupa path file (string) atau Buffer",
-      );
+    if (!url || !/tiktok\.com/i.test(url))
+      throw new Error("URL TikTok tidak valid");
+
+    const data = await fetchInfo(url, false);
+    if (!data || !data.itemId) {
+      const msg =
+        data?.error?.message ||
+        "Gagal mengambil data (token/URL ditolak server)";
+      throw new Error(msg);
     }
 
-    const response = await axios.post(UPLOAD_URL, form, {
-      headers: { ...form.getHeaders() },
-    });
+    const result = formatResult(data);
 
-    if (response.data && response.data.success) {
-      const fileKey = response.data.data.key;
-      return {
-        success: true,
-        message: "Upload berhasil",
-        data: { ...response.data.data, url: `${BASE_FILE_URL}/${fileKey}` },
-      };
+    if (options.hd && !result.download.no_watermark_hd) {
+      const hdData = await fetchInfo(url, true);
+      if (hdData?.no_watermark_link_hd) {
+        result.download.no_watermark_hd = hdData.no_watermark_link_hd;
+      }
     }
-    throw new Error(response.data.message || "Upload gagal dari server");
-  } catch (error) {
+
     return {
-      success: false,
-      message:
-        error.response?.data?.message ||
-        error.message ||
-        "Terjadi kesalahan saat upload",
+      status: true,
+      result,
+      cookies: cookieHeader(),
     };
-  }
-}
-
-async function getBuffer(url, apiInstance) {
-  try {
-    const response = await apiInstance.get(url, {
-      responseType: "arraybuffer",
-      headers: {
-        Referer: "https://www.tiktok.com/",
-        Range: "bytes=0-",
-      },
-    });
-    return Buffer.from(response.data);
-  } catch (e) {
-    console.error(`[Download Error]:`, e.message);
-    return null;
-  }
-}
-
-async function downloadTiktok(url) {
-  const jar = new CookieJar();
-  const api = wrapper(
-    axios.create({
-      jar,
-      withCredentials: true,
-      headers: {
-        "User-Agent":
-          "Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/135.0.0.0 Safari/537.36 Edg/135.0.0.0",
-        Accept:
-          "text/html,application/xhtml+xml,application/xml;q=0.9,image/avif,image/webp,*/*;q=0.8",
-      },
-    }),
-  );
-
-  try {
-    const htmlResponse = await api.get(url);
-    const $ = cheerio.load(htmlResponse.data);
-
-    const scriptContent =
-      $("#__UNIVERSAL_DATA_FOR_REHYDRATION__").html() ||
-      $("#SIGI_STATE").html();
-    if (!scriptContent) throw new Error("Script tag data tidak ditemukan.");
-
-    const jsonData = JSON.parse(scriptContent);
-    const defaultScope = jsonData?.__DEFAULT_SCOPE__;
-    const itemStruct =
-      defaultScope?.["webapp.reflow.video.detail"]?.itemInfo?.itemStruct ||
-      defaultScope?.["webapp.video-detail"]?.itemInfo?.itemStruct ||
-      Object.values(jsonData.ItemModule || {})[0];
-
-    if (!itemStruct)
-      throw new Error("Struct video tidak ditemukan dalam JSON.");
-
-    const videoId = itemStruct.id;
-    const isSlide = !!itemStruct.imagePost;
-
-    const metadata = {
-      id: videoId,
-      type: isSlide ? "image_slide" : "video",
-      description: itemStruct.desc,
-      createTime: new Date(itemStruct.createTime * 1000).toLocaleString(),
-      region: itemStruct.locationCreated || "N/A",
-      hashtags:
-        itemStruct.challenges?.map((tag) => ({
-          id: tag.id,
-          name: tag.title,
-        })) || [],
-    };
-    const author = {
-      id: itemStruct.author?.id,
-      uniqueId: itemStruct.author?.uniqueId,
-      nickname: itemStruct.author?.nickname,
-      signature: itemStruct.author?.signature,
-      avatar: itemStruct.author?.avatarLarger || itemStruct.author?.avatarThumb,
-      verified: itemStruct.author?.verified,
-    };
-    const stats = {
-      views: itemStruct.statsV2?.playCount || itemStruct.stats?.playCount,
-      likes: itemStruct.statsV2?.diggCount || itemStruct.stats?.diggCount,
-      comments:
-        itemStruct.statsV2?.commentCount || itemStruct.stats?.commentCount,
-      shares: itemStruct.statsV2?.shareCount || itemStruct.stats?.shareCount,
-      saves: itemStruct.statsV2?.collectCount || itemStruct.stats?.collectCount,
-    };
-
-    // ===== IMAGE SLIDE =====
-    if (isSlide) {
-      const imagesList = itemStruct.imagePost.images.map(
-        (img) => img.imageURL.urlList[0],
-      );
-      const audioUrl = itemStruct.music?.playUrl;
-
-      const finalResult = {
-        metadata,
-        originalUrl: { images: imagesList, audio: audioUrl },
-        author,
-        music: {
-          id: itemStruct.music?.id,
-          title: itemStruct.music?.title,
-          author: itemStruct.music?.authorName,
-          cover: itemStruct.music?.coverLarge,
-          playUrl: audioUrl,
-          isOriginal: itemStruct.music?.original,
-        },
-        stats,
-        isSlide: true,
-      };
-
-      return { status: true, result: finalResult };
-    }
-
-    // ===== VIDEO =====
-    const videoData = itemStruct.video;
-    const watermarkUrl = videoData.downloadAddr || videoData.playAddr;
-    let hdNoWatermarkUrl = null;
-    let bitrateLabel = 0;
-    let qualityLabel = "Original";
-
-    if (videoData.bitrateInfo && Array.isArray(videoData.bitrateInfo)) {
-      const bestQuality = [...videoData.bitrateInfo].sort(
-        (a, b) => b.Bitrate - a.Bitrate,
-      )[0];
-      if (bestQuality) {
-        bitrateLabel = bestQuality.Bitrate;
-        qualityLabel = bestQuality.QualityType;
-        const urlList = bestQuality.PlayAddr?.UrlList || [];
-        hdNoWatermarkUrl =
-          urlList.find((u) => u.includes("aweme/v1/play")) ||
-          urlList[urlList.length - 1];
-      }
-    }
-    if (!hdNoWatermarkUrl) hdNoWatermarkUrl = videoData.playAddr;
-
-    const finalResult = {
-      metadata,
-      originalUrl: {
-        watermark: watermarkUrl,
-        hd_nonwatermark: hdNoWatermarkUrl,
-      },
-      cloudUrl: {
-        watermark: null,
-        hd_nonwatermark: null,
-      },
-      videoInfo: {
-        duration: videoData?.duration,
-        resolution: `${videoData?.width}x${videoData?.height}`,
-        format: videoData?.format,
-        codec: videoData?.codecType,
-        bitrate: bitrateLabel,
-        quality: qualityLabel,
-        cover: {
-          static: videoData?.cover,
-          dynamic: videoData?.dynamicCover,
-          origin: videoData?.originCover,
-        },
-      },
-      author,
-      music: {
-        id: itemStruct.music?.id,
-        title: itemStruct.music?.title,
-        author: itemStruct.music?.authorName,
-        cover: itemStruct.music?.coverLarge,
-        playUrl: itemStruct.music?.playUrl,
-        isOriginal: itemStruct.music?.original,
-      },
-      stats,
-      isSlide: false,
-    };
-
-    if (watermarkUrl) {
-      const wmBuffer = await getBuffer(watermarkUrl, api);
-      if (wmBuffer) {
-        const upload = await uploadFile(wmBuffer, `tiktok_wm_${videoId}.mp4`);
-        if (upload.success) finalResult.cloudUrl.watermark = upload.data.url;
-        else console.error(`[Upload WM Error]:`, upload.message);
-      }
-    }
-
-    if (hdNoWatermarkUrl) {
-      const hdBuffer = await getBuffer(hdNoWatermarkUrl, api);
-      if (hdBuffer) {
-        const upload = await uploadFile(hdBuffer, `tiktok_hd_${videoId}.mp4`);
-        if (upload.success)
-          finalResult.cloudUrl.hd_nonwatermark = upload.data.url;
-        else console.error(`[Upload HD Error]:`, upload.message);
-      }
-    }
-
-    return { status: true, result: finalResult };
   } catch (error) {
-    console.error("Error Main Process:", error.message);
-    return { status: false, error: error.message };
+    const msg = error.response
+      ? `HTTP ${error.response.status}`
+      : error.message;
+    console.error("Error Main Process:", msg);
+    return { status: false, error: msg };
   }
-}
+};
 
-module.exports = { downloadTiktok };
+module.exports = { downloadTiktok: tiktokDownloaderV2 };
